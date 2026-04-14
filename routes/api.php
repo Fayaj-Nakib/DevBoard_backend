@@ -27,9 +27,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Projects
     Route::apiResource('workspaces/{workspace}/projects', ProjectController::class);
 
-    // Tasks
-    Route::apiResource('workspaces/{workspace}/projects/{project}/tasks', TaskController::class);
+    // Tasks (reorder must be registered before the resource so {task} doesn't match "reorder")
     Route::patch('workspaces/{workspace}/projects/{project}/tasks/reorder', [TaskController::class, 'reorder']);
+    Route::apiResource('workspaces/{workspace}/projects/{project}/tasks', TaskController::class);
 
     // Comments
     Route::apiResource('tasks/{task}/comments', CommentController::class)

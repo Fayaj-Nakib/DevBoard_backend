@@ -13,8 +13,15 @@ use Illuminate\Support\Facades\DB;
 
 class TaskController extends Controller
 {
+    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
+    {
+        abort_if(!in_array($workspace->userRole(auth()->user()), $roles), 403);
+    }
+
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
+        $this->gate($workspace);
+
         $tasks = $project->tasks()
             ->with(['assignee:id,name,email', 'creator:id,name'])
             ->orderBy('status')
@@ -27,6 +34,8 @@ class TaskController extends Controller
 
     public function store(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
+        $this->gate($workspace);
+
         $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -48,6 +57,7 @@ class TaskController extends Controller
             'priority'    => $request->priority ?? 'medium',
             'due_date'    => $request->due_date,
             'position'    => $position,
+            'status'      => 'todo',
         ]);
 
         if ($task->assignee_id && $task->assignee_id !== $request->user()->id) {
@@ -59,6 +69,8 @@ class TaskController extends Controller
 
     public function show(Workspace $workspace, Project $project, Task $task): JsonResponse
     {
+        $this->gate($workspace);
+
         return response()->json(
             $task->load(['assignee', 'creator', 'comments.user'])
         );
@@ -66,6 +78,8 @@ class TaskController extends Controller
 
     public function update(Request $request, Workspace $workspace, Project $project, Task $task): JsonResponse
     {
+        $this->gate($workspace);
+
         $oldAssignee = $task->assignee_id;
 
         $task->update($request->only([
@@ -82,12 +96,17 @@ class TaskController extends Controller
 
     public function destroy(Workspace $workspace, Project $project, Task $task): JsonResponse
     {
+        $this->gate($workspace);
+
         $task->delete();
+
         return response()->json(null, 204);
     }
 
     public function reorder(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
+        $this->gate($workspace);
+
         $request->validate([
             'tasks'            => 'required|array',
             'tasks.*.id'       => 'required|string',

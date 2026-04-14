@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Traits\HasUuid;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 class Workspace extends Model
 {
-    use HasUuid, HasSlug;
+    use HasFactory, HasUuid, HasSlug;
 
     protected $fillable = ['name', 'slug', 'owner_id'];
 
