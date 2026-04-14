@@ -6,7 +6,7 @@ return [
      * Which routes CORS headers are applied to.
      * 'api/*' covers every endpoint in routes/api.php.
      */
-    'paths' => ['api/*'],
+    'paths' => ['*'],
 
     'allowed_methods' => ['*'],
 
