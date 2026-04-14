@@ -1,0 +1,65 @@
+services:
+  - type: web
+    name: devboard-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /up
+    envVars:
+      # ── App ────────────────────────────────────────────────────
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        generateValue: true          # Render generates a random base64 key
+      - key: APP_URL
+        sync: false                  # Set to your Render service URL after deploy
+
+      # ── Database (Neon PostgreSQL) ──────────────────────────────
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        sync: false                  # From Neon dashboard
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSLMODE
+        value: require               # Neon requires SSL
+
+      # ── Queue (sync = no worker needed on free tier) ────────────
+      - key: QUEUE_CONNECTION
+        value: sync
+
+      # ── Cache / Session (file-based, no Redis needed) ──────────
+      - key: CACHE_STORE
+        value: file
+      - key: SESSION_DRIVER
+        value: file
+
+      # ── Mail (Gmail SMTP) ──────────────────────────────────────
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_ENCRYPTION
+        value: tls
+      - key: MAIL_USERNAME
+        sync: false                  # Your Gmail address
+      - key: MAIL_PASSWORD
+        sync: false                  # Gmail App Password (not your login password)
+      - key: MAIL_FROM_ADDRESS
+        sync: false
+      - key: MAIL_FROM_NAME
+        value: DevBoard
+
+      # ── CORS ───────────────────────────────────────────────────
+      - key: FRONTEND_URL
+        sync: false                  # Your Vercel URL, e.g. https://devboard.vercel.app
