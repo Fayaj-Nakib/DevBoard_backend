@@ -17,7 +17,7 @@ jobs:
         env:
           POSTGRES_DB: devboard_test
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: 12345          # must match DB_PASSWORD in phpunit.xml
         ports:
           - 5432:5432
         options: >-
@@ -34,7 +34,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: pdo, pdo_sqlite, pdo_pgsql, mbstring, xml, bcmath
+          extensions: pdo, pdo_pgsql, mbstring, xml, bcmath
           coverage: none
 
       - name: Cache Composer dependencies
@@ -53,12 +53,13 @@ jobs:
       - name: Generate application key
         run: php artisan key:generate
 
-      - name: Run PHPUnit (SQLite in-memory)
-        run: php artisan test --parallel
+      - name: Run PHPUnit (PostgreSQL)
+        run: php artisan test
 
   lint:
-    name: Static Analysis (Pint)
+    name: Code Style (Pint)
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
