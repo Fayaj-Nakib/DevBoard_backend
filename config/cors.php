@@ -16,7 +16,10 @@ return [
      * Multiple origins can be separated by commas.
      */
     'allowed_origins' => array_filter(
-        array_map('trim', explode(',', env('FRONTEND_URL', 'http://localhost:3000')))
+        array_map(
+            fn(string $o) => rtrim(trim($o), '/'),
+            explode(',', env('FRONTEND_URL', 'http://localhost:3000'))
+        )
     ),
 
     'allowed_origins_patterns' => [],
