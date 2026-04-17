@@ -1,58 +1,204 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# DevBoard API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+> REST API backend for DevBoard — a SaaS-style Kanban project management tool.
 
-## About Laravel
+[![API CI](https://github.com/YOUR_GITHUB_USERNAME/devboard-api/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/YOUR_GITHUB_USERNAME/devboard-api/actions/workflows/ci-cd.yml)
+[![PHP 8.3](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white)](https://php.net)
+[![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)](https://laravel.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://postgresql.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## What is DevBoard?
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+DevBoard is a full-stack project management tool inspired by tools like Linear and Trello. Teams can create **workspaces**, organise work into **projects**, and manage **tasks** on a drag-and-drop Kanban board.
 
-## Learning Laravel
+This repository is the **Laravel 13 REST API**. The Next.js frontend lives in a separate repo — see [devboard-web](https://github.com/YOUR_GITHUB_USERNAME/devboard-web).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+**Live demo:** https://devboard.vercel.app  
+**API base URL:** https://devboard-api.onrender.com/api
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Tech Stack
 
-## Agentic Development
+| Layer | Choice |
+|---|---|
+| Framework | Laravel 13 |
+| Language | PHP 8.3 |
+| Auth | Laravel Sanctum (token-based) |
+| Database | PostgreSQL 16 (Neon on prod) |
+| Queue | Database driver (sync on free tier) |
+| Mail | Gmail SMTP / log driver (dev) |
+| Containerisation | Docker (Render deployment) |
+| CI/CD | GitHub Actions — PHPUnit + Pint |
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+---
 
-```bash
-composer require laravel/boost --dev
+## Architecture
 
-php artisan boost:install
+```
+┌──────────────────────────────────────────────────────┐
+│                   Client Browser                     │
+└──────────────────────┬───────────────────────────────┘
+                       │  HTTPS
+                       ▼
+┌──────────────────────────────────────────────────────┐
+│          Next.js 16 Frontend  (Vercel)               │
+│   React 19 · Tailwind CSS 4 · @hello-pangea/dnd      │
+└──────────────────────┬───────────────────────────────┘
+                       │  REST + Bearer token
+                       ▼
+┌──────────────────────────────────────────────────────┐
+│          Laravel 13 API  (Render / Docker)           │
+│   Sanctum · Eloquent · Queue jobs · Mailable         │
+└────────────┬─────────────────────────┬───────────────┘
+             │                         │
+             ▼                         ▼
+┌─────────────────────┐   ┌────────────────────────┐
+│  PostgreSQL (Neon)  │   │  Gmail SMTP (email)    │
+└─────────────────────┘   └────────────────────────┘
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## API Endpoints
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/register` | — | Register a new user |
+| POST | `/api/auth/login` | — | Log in, receive token |
+| POST | `/api/auth/logout` | ✓ | Revoke current token |
+| GET | `/api/auth/me` | ✓ | Authenticated user profile |
+| GET/POST | `/api/workspaces` | ✓ | List / create workspaces |
+| GET/PATCH/DELETE | `/api/workspaces/{id}` | ✓ | Show / update / delete workspace |
+| POST | `/api/workspaces/{id}/members` | ✓ | Add member to workspace |
+| DELETE | `/api/workspaces/{id}/members/{user}` | ✓ | Remove member |
+| GET/POST | `/api/workspaces/{ws}/projects` | ✓ | List / create projects |
+| GET/PATCH/DELETE | `/api/workspaces/{ws}/projects/{id}` | ✓ | Show / update / delete project |
+| GET/POST | `/api/workspaces/{ws}/projects/{p}/tasks` | ✓ | List / create tasks |
+| GET/PATCH/DELETE | `/api/workspaces/{ws}/projects/{p}/tasks/{id}` | ✓ | Show / update / delete task |
+| PATCH | `/api/workspaces/{ws}/projects/{p}/tasks/reorder` | ✓ | Reorder all tasks in a project |
+| GET/POST | `/api/tasks/{task}/comments` | ✓ | List / add comments |
+| DELETE | `/api/tasks/{task}/comments/{id}` | ✓ | Delete comment |
+| GET | `/api/notifications` | ✓ | Unread notifications |
+| PATCH | `/api/notifications/read-all` | ✓ | Mark all read |
+| PATCH | `/api/notifications/{id}/read` | ✓ | Mark one read |
 
-## Code of Conduct
+All protected routes require `Authorization: Bearer {token}` header.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## Local Setup
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Prerequisites
 
-## License
+- PHP 8.3+
+- Composer 2
+- PostgreSQL 14+ running locally
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Steps
+
+```bash
+# 1. Clone
+git clone https://github.com/YOUR_GITHUB_USERNAME/devboard-api.git
+cd devboard-api
+
+# 2. Install PHP dependencies
+composer install
+
+# 3. Configure environment
+cp .env.example .env
+php artisan key:generate
+
+# 4. Set your database credentials in .env
+#    DB_DATABASE=devboard
+#    DB_USERNAME=postgres
+#    DB_PASSWORD=your_password
+
+# 5. Run migrations
+php artisan migrate
+
+# 6. Start the dev server
+php artisan serve
+```
+
+The API will be available at `http://localhost:8000`.
+
+### Running Tests
+
+Tests require a separate PostgreSQL database (`devboard_test` by default — see `phpunit.xml`).
+
+```bash
+# Create the test database first
+createdb devboard_test
+
+# Run all tests
+php artisan test
+
+# Run a specific suite
+php artisan test tests/Feature/AuthTest.php
+php artisan test tests/Feature/TaskTest.php
+```
+
+There are 25 feature tests covering auth (10) and task management (15). All pass against a live PostgreSQL instance.
+
+### Code Style
+
+```bash
+# Check style (Pint)
+vendor/bin/pint --test
+
+# Auto-fix
+vendor/bin/pint
+```
+
+---
+
+## Deployment
+
+The API is deployed as a Docker container on **Render** connected to a **Neon** PostgreSQL database.
+
+```bash
+# Render reads render.yaml at the repo root automatically.
+# Set these env vars manually in the Render dashboard:
+#   APP_URL, DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD,
+#   MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM_ADDRESS, FRONTEND_URL
+```
+
+Key production settings (already in `render.yaml`):
+- `QUEUE_CONNECTION=sync` — no background worker needed on the free tier
+- `DB_SSLMODE=require` — Neon enforces SSL
+- `MAIL_MAILER=smtp` — Gmail App Password for transactional email
+
+---
+
+## A Note on Blade Files
+
+GitHub's language detector reports ~40% Blade because of a single email template at `resources/views/emails/task-assigned.blade.php`. This is a **pure JSON API** — there are no server-rendered HTML pages. The email template is the only Blade file in the project.
+
+---
+
+## Why These Choices?
+
+**Laravel over Node/Express** — Eloquent ORM, Sanctum, artisan commands, and first-class queue support let a small team ship a complete backend quickly without glue code. The conventions are well-understood and the ecosystem is mature.
+
+**Sanctum over Passport/JWT** — Sanctum token auth is simple, stateless, and sufficient for a SPA + API setup. No OAuth complexity needed for a v1.
+
+**PostgreSQL over MySQL** — UUID primary keys, stricter type enforcement, and Neon's serverless free tier made Postgres the obvious choice. SQLite was ruled out because it silently accepts invalid UUIDs (a real bug this project hit during development).
+
+**Neon (serverless Postgres)** — Free tier with no idle spin-down penalty, unlike a traditional VPS database.
+
+**Render over Railway/Fly** — Docker-native deploys, free tier web services, and `render.yaml` for infrastructure-as-code.
+
+---
+
+## CI/CD
+
+Two jobs run on every push and PR to `main` / `develop`:
+
+1. **PHPUnit Tests** — spins up a Postgres 16 service container, runs `php artisan test`
+2. **Code Style (Pint)** — runs `vendor/bin/pint --test`, fails on style violations
+
+Add the badge to your GitHub profile by replacing `YOUR_GITHUB_USERNAME` in the badge URL at the top of this file.
