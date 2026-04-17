@@ -2,7 +2,7 @@
 
 > REST API backend for DevBoard — a SaaS-style Kanban project management tool.
 
-[![API CI](https://github.com/YOUR_GITHUB_USERNAME/devboard-api/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/YOUR_GITHUB_USERNAME/devboard-api/actions/workflows/ci-cd.yml)
+[![API CI](https://github.com/Fayaj-Nakib/devboard-api/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Fayaj-Nakib/devboard-api/actions/workflows/ci-cd.yml)
 [![PHP 8.3](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white)](https://php.net)
 [![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)](https://laravel.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://postgresql.org)
@@ -14,7 +14,7 @@
 
 DevBoard is a full-stack project management tool inspired by tools like Linear and Trello. Teams can create **workspaces**, organise work into **projects**, and manage **tasks** on a drag-and-drop Kanban board.
 
-This repository is the **Laravel 13 REST API**. The Next.js frontend lives in a separate repo — see [devboard-web](https://github.com/YOUR_GITHUB_USERNAME/devboard-web).
+This repository is the **Laravel 13 REST API**. The Next.js frontend lives in a separate repo — see [devboard-web](https://github.com/Fayaj-Nakib/devboard-web).
 
 **Live demo:** https://devboard.vercel.app  
 **API base URL:** https://devboard-api.onrender.com/api
@@ -102,7 +102,7 @@ All protected routes require `Authorization: Bearer {token}` header.
 
 ```bash
 # 1. Clone
-git clone https://github.com/YOUR_GITHUB_USERNAME/devboard-api.git
+git clone https://github.com/Fayaj-Nakib/devboard-api.git
 cd devboard-api
 
 # 2. Install PHP dependencies
@@ -201,4 +201,4 @@ Two jobs run on every push and PR to `main` / `develop`:
 1. **PHPUnit Tests** — spins up a Postgres 16 service container, runs `php artisan test`
 2. **Code Style (Pint)** — runs `vendor/bin/pint --test`, fails on style violations
 
-Add the badge to your GitHub profile by replacing `YOUR_GITHUB_USERNAME` in the badge URL at the top of this file.
+Add the badge to your GitHub profile by replacing `Fayaj-Nakib` in the badge URL at the top of this file.
