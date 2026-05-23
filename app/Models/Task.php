@@ -11,7 +11,7 @@ class Task extends Model
     use HasFactory, HasUuid;
 
     protected $fillable = [
-        'project_id', 'created_by',
+        'project_id', 'parent_id', 'created_by',
         'title', 'description', 'status', 'priority', 'position', 'due_date',
     ];
 
@@ -20,6 +20,16 @@ class Task extends Model
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(Task::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Task::class, 'parent_id')->orderBy('position');
     }
 
     public function assignees()

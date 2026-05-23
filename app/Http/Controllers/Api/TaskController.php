@@ -9,6 +9,7 @@ use App\Models\Task;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class TaskController extends Controller
@@ -16,7 +17,7 @@ class TaskController extends Controller
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
     {
         /** @var \App\Models\User $user */
-        $user = auth()->user();
+        $user = Auth::user();
         abort_if(!in_array($workspace->userRole($user), $roles), 403);
     }
 
@@ -84,15 +85,17 @@ class TaskController extends Controller
     public function show(Workspace $workspace, Project $project, Task $task): JsonResponse
     {
         $this->gate($workspace);
+        abort_if($task->project_id !== $project->id, 404);
 
         return response()->json(
-            $task->load(['assignees', 'creator', 'comments.user', 'labels'])
+            $task->load(['assignees', 'creator', 'comments.user', 'labels', 'attachments'])
         );
     }
 
     public function update(Request $request, Workspace $workspace, Project $project, Task $task): JsonResponse
     {
         $this->gate($workspace);
+        abort_if($task->project_id !== $project->id, 404);
 
         $request->validate([
             'assignee_ids'   => 'sometimes|nullable|array',
@@ -131,10 +134,60 @@ class TaskController extends Controller
     public function destroy(Workspace $workspace, Project $project, Task $task): JsonResponse
     {
         $this->gate($workspace);
+        abort_if($task->project_id !== $project->id, 404);
 
         $task->delete();
 
         return response()->json(null, 204);
+    }
+
+    public function indexSubtasks(Workspace $workspace, Project $project, Task $task): JsonResponse
+    {
+        $this->gate($workspace);
+
+        return response()->json(
+            $task->children()->with(['assignees', 'labels'])->get()
+        );
+    }
+
+    public function storeSubtask(Request $request, Workspace $workspace, Project $project, Task $parent): JsonResponse
+    {
+        $this->gate($workspace);
+
+        $request->validate([
+            'title'          => 'required|string|max:255',
+            'description'    => 'nullable|string',
+            'priority'       => 'in:low,medium,high',
+            'due_date'       => 'nullable|date',
+            'assignee_ids'   => 'nullable|array',
+            'assignee_ids.*' => 'string|exists:users,id',
+        ]);
+
+        $position = $parent->children()->max('position') + 1;
+
+        $subtask = Task::create([
+            'project_id'  => $project->id,
+            'parent_id'   => $parent->id,
+            'created_by'  => $request->user()->id,
+            'title'       => $request->title,
+            'description' => $request->description,
+            'priority'    => $request->priority ?? 'medium',
+            'due_date'    => $request->due_date,
+            'position'    => $position,
+            'status'      => 'todo',
+        ]);
+
+        if ($request->filled('assignee_ids')) {
+            $subtask->assignees()->sync($request->assignee_ids);
+            $currentUserId = $request->user()->id;
+            foreach ($subtask->assignees as $assignee) {
+                if ($assignee->id !== $currentUserId) {
+                    SendTaskAssignedNotification::dispatch($subtask, $assignee);
+                }
+            }
+        }
+
+        return response()->json($subtask->load(['assignees', 'parent']), 201);
     }
 
     public function reorder(Request $request, Workspace $workspace, Project $project): JsonResponse
