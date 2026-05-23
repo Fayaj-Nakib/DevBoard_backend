@@ -36,4 +36,9 @@ class Task extends Model
     {
         return $this->hasMany(Comment::class)->latest();
     }
+
+    public function labels()
+    {
+        return $this->belongsToMany(Label::class, 'label_task');
+    }
 }

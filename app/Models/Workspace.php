@@ -41,6 +41,11 @@ class Workspace extends Model
         return $this->hasMany(ActivityLog::class);
     }
 
+    public function labels()
+    {
+        return $this->hasMany(Label::class);
+    }
+
     public function userRole(User $user): ?string
     {
         return $this->members()
