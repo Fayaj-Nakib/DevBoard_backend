@@ -41,4 +41,9 @@ class Task extends Model
     {
         return $this->belongsToMany(Label::class, 'label_task');
     }
+
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
+    }
 }
