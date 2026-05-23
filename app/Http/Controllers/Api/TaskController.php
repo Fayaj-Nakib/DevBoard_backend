@@ -45,6 +45,7 @@ class TaskController extends Controller
             'description'  => 'nullable|string',
             'priority'     => 'in:low,medium,high',
             'due_date'     => 'nullable|date',
+            'started_at'   => 'nullable|date',
             'assignee_ids' => 'nullable|array',
             'assignee_ids.*' => 'string|exists:users,id',
             'label_ids'    => 'nullable|array',
@@ -62,6 +63,7 @@ class TaskController extends Controller
             'description' => $request->description,
             'priority'    => $request->priority ?? 'medium',
             'due_date'    => $request->due_date,
+            'started_at'  => $request->started_at,
             'position'    => $position,
             'status'      => 'todo',
         ]);
@@ -107,7 +109,7 @@ class TaskController extends Controller
 
         $oldStatus = $task->status;
         $task->update($request->only([
-            'title', 'description', 'status', 'priority', 'due_date', 'position',
+            'title', 'description', 'status', 'priority', 'due_date', 'started_at', 'position',
         ]));
 
         // Notify watchers when status changes

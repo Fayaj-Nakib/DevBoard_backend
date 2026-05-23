@@ -12,10 +12,13 @@ class Task extends Model
 
     protected $fillable = [
         'project_id', 'parent_id', 'created_by',
-        'title', 'description', 'status', 'priority', 'position', 'due_date',
+        'title', 'description', 'status', 'priority', 'position', 'due_date', 'started_at',
     ];
 
-    protected $casts = ['due_date' => 'date'];
+    protected $casts = [
+        'due_date'   => 'date',
+        'started_at' => 'date',
+    ];
 
     public function project()
     {
