@@ -56,4 +56,9 @@ class Task extends Model
     {
         return $this->morphMany(Attachment::class, 'attachable');
     }
+
+    public function watchers()
+    {
+        return $this->belongsToMany(User::class, 'task_watchers')->select('users.id', 'users.name', 'users.email');
+    }
 }

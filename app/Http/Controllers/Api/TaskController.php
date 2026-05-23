@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\SendTaskAssignedNotification;
+use App\Jobs\SendTaskWatcherNotification;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Workspace;
@@ -104,9 +105,23 @@ class TaskController extends Controller
             'label_ids.*'    => 'string|exists:labels,id',
         ]);
 
+        $oldStatus = $task->status;
         $task->update($request->only([
             'title', 'description', 'status', 'priority', 'due_date', 'position',
         ]));
+
+        // Notify watchers when status changes
+        if ($request->filled('status') && $request->status !== $oldStatus) {
+            $actorId = $request->user()->id;
+            foreach ($task->watchers as $watcher) {
+                if ($watcher->id !== $actorId) {
+                    SendTaskWatcherNotification::dispatch($task, $watcher, 'status_changed', [
+                        'from' => $oldStatus,
+                        'to'   => $task->status,
+                    ]);
+                }
+            }
+        }
 
         if ($request->has('assignee_ids')) {
             $oldIds  = $task->assignees()->pluck('users.id')->all();
@@ -141,9 +156,34 @@ class TaskController extends Controller
         return response()->json(null, 204);
     }
 
+    public function watch(Request $request, Task $task): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $workspace = $task->project->workspace;
+        $this->gate($workspace);
+
+        $task->watchers()->syncWithoutDetaching([$user->id]);
+
+        return response()->json(['message' => 'Watching.']);
+    }
+
+    public function unwatch(Request $request, Task $task): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $workspace = $task->project->workspace;
+        $this->gate($workspace);
+
+        $task->watchers()->detach($user->id);
+
+        return response()->json(null, 204);
+    }
+
     public function indexSubtasks(Workspace $workspace, Project $project, Task $task): JsonResponse
     {
         $this->gate($workspace);
+        abort_if($task->project_id !== $project->id, 404);
 
         return response()->json(
             $task->children()->with(['assignees', 'labels'])->get()
