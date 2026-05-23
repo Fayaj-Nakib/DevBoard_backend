@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Mail\TaskAssignedMail;
 use App\Models\Notification;
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,17 +20,14 @@ class SendTaskAssignedNotification implements ShouldQueue
     public int $tries  = 3;
     public int $backoff = 60;
 
-    public function __construct(public Task $task) {}
+    public function __construct(public Task $task, public User $assignee) {}
 
     public function handle(): void
     {
-        $assignee = $this->task->assignee;
-        if (!$assignee) return;
-
-        Mail::to($assignee->email)->send(new TaskAssignedMail($this->task));
+        Mail::to($this->assignee->email)->send(new TaskAssignedMail($this->task));
 
         Notification::create([
-            'user_id'    => $assignee->id,
+            'user_id'    => $this->assignee->id,
             'type'       => 'TaskAssigned',
             'data'       => [
                 'task_id'     => $this->task->id,

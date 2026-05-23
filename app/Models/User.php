@@ -33,7 +33,7 @@ class User extends Authenticatable
 
     public function assignedTasks()
     {
-        return $this->hasMany(Task::class, 'assignee_id');
+        return $this->belongsToMany(Task::class, 'task_assignees');
     }
 
     public function comments()

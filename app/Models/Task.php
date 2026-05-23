@@ -11,7 +11,7 @@ class Task extends Model
     use HasFactory, HasUuid;
 
     protected $fillable = [
-        'project_id', 'assignee_id', 'created_by',
+        'project_id', 'created_by',
         'title', 'description', 'status', 'priority', 'position', 'due_date',
     ];
 
@@ -22,9 +22,9 @@ class Task extends Model
         return $this->belongsTo(Project::class);
     }
 
-    public function assignee()
+    public function assignees()
     {
-        return $this->belongsTo(User::class, 'assignee_id');
+        return $this->belongsToMany(User::class, 'task_assignees')->select('users.id', 'users.name', 'users.email');
     }
 
     public function creator()

@@ -15,7 +15,9 @@ class TaskController extends Controller
 {
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
     {
-        abort_if(!in_array($workspace->userRole(auth()->user()), $roles), 403);
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        abort_if(!in_array($workspace->userRole($user), $roles), 403);
     }
 
     public function index(Workspace $workspace, Project $project): JsonResponse
@@ -23,7 +25,7 @@ class TaskController extends Controller
         $this->gate($workspace);
 
         $tasks = $project->tasks()
-            ->with(['assignee:id,name,email', 'creator:id,name'])
+            ->with(['assignees', 'creator:id,name', 'labels'])
             ->orderBy('status')
             ->orderBy('position')
             ->get()
@@ -37,11 +39,14 @@ class TaskController extends Controller
         $this->gate($workspace);
 
         $request->validate([
-            'title'       => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'priority'    => 'in:low,medium,high',
-            'due_date'    => 'nullable|date',
-            'assignee_id' => 'nullable|string|exists:users,id',
+            'title'        => 'required|string|max:255',
+            'description'  => 'nullable|string',
+            'priority'     => 'in:low,medium,high',
+            'due_date'     => 'nullable|date',
+            'assignee_ids' => 'nullable|array',
+            'assignee_ids.*' => 'string|exists:users,id',
+            'label_ids'    => 'nullable|array',
+            'label_ids.*'  => 'string|exists:labels,id',
         ]);
 
         $position = $project->tasks()
@@ -51,7 +56,6 @@ class TaskController extends Controller
         $task = Task::create([
             'project_id'  => $project->id,
             'created_by'  => $request->user()->id,
-            'assignee_id' => $request->assignee_id,
             'title'       => $request->title,
             'description' => $request->description,
             'priority'    => $request->priority ?? 'medium',
@@ -60,11 +64,21 @@ class TaskController extends Controller
             'status'      => 'todo',
         ]);
 
-        if ($task->assignee_id && $task->assignee_id !== $request->user()->id) {
-            SendTaskAssignedNotification::dispatch($task);
+        if ($request->filled('assignee_ids')) {
+            $task->assignees()->sync($request->assignee_ids);
+            $currentUserId = $request->user()->id;
+            foreach ($task->assignees as $assignee) {
+                if ($assignee->id !== $currentUserId) {
+                    SendTaskAssignedNotification::dispatch($task, $assignee);
+                }
+            }
         }
 
-        return response()->json($task->load('assignee'), 201);
+        if ($request->filled('label_ids')) {
+            $task->labels()->sync($request->label_ids);
+        }
+
+        return response()->json($task->load(['assignees', 'labels']), 201);
     }
 
     public function show(Workspace $workspace, Project $project, Task $task): JsonResponse
@@ -72,7 +86,7 @@ class TaskController extends Controller
         $this->gate($workspace);
 
         return response()->json(
-            $task->load(['assignee', 'creator', 'comments.user'])
+            $task->load(['assignees', 'creator', 'comments.user', 'labels'])
         );
     }
 
@@ -80,18 +94,38 @@ class TaskController extends Controller
     {
         $this->gate($workspace);
 
-        $oldAssignee = $task->assignee_id;
+        $request->validate([
+            'assignee_ids'   => 'sometimes|nullable|array',
+            'assignee_ids.*' => 'string|exists:users,id',
+            'label_ids'      => 'sometimes|nullable|array',
+            'label_ids.*'    => 'string|exists:labels,id',
+        ]);
 
         $task->update($request->only([
-            'title', 'description', 'status', 'priority',
-            'due_date', 'assignee_id', 'position',
+            'title', 'description', 'status', 'priority', 'due_date', 'position',
         ]));
 
-        if ($request->assignee_id && $request->assignee_id !== $oldAssignee) {
-            SendTaskAssignedNotification::dispatch($task->fresh());
+        if ($request->has('assignee_ids')) {
+            $oldIds  = $task->assignees()->pluck('users.id')->all();
+            $newIds  = $request->assignee_ids ?? [];
+            $task->assignees()->sync($newIds);
+            $addedIds    = array_diff($newIds, $oldIds);
+            $currentUserId = $request->user()->id;
+            if ($addedIds) {
+                $task->load('assignees');
+                foreach ($task->assignees->whereIn('id', $addedIds) as $assignee) {
+                    if ($assignee->id !== $currentUserId) {
+                        SendTaskAssignedNotification::dispatch($task, $assignee);
+                    }
+                }
+            }
         }
 
-        return response()->json($task->load('assignee'));
+        if ($request->has('label_ids')) {
+            $task->labels()->sync($request->label_ids ?? []);
+        }
+
+        return response()->json($task->load(['assignees', 'labels']));
     }
 
     public function destroy(Workspace $workspace, Project $project, Task $task): JsonResponse
