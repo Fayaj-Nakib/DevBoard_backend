@@ -11,7 +11,7 @@ class Task extends Model
     use HasFactory, HasUuid;
 
     protected $fillable = [
-        'project_id', 'parent_id', 'created_by',
+        'project_id', 'parent_id', 'milestone_id', 'created_by',
         'title', 'description', 'status', 'priority', 'position', 'due_date', 'started_at',
     ];
 
@@ -23,6 +23,11 @@ class Task extends Model
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function milestone()
+    {
+        return $this->belongsTo(Milestone::class);
     }
 
     public function parent()

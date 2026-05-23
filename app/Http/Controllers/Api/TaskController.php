@@ -46,6 +46,7 @@ class TaskController extends Controller
             'priority'     => 'in:low,medium,high',
             'due_date'     => 'nullable|date',
             'started_at'   => 'nullable|date',
+            'milestone_id' => 'nullable|string|exists:milestones,id',
             'assignee_ids' => 'nullable|array',
             'assignee_ids.*' => 'string|exists:users,id',
             'label_ids'    => 'nullable|array',
@@ -62,10 +63,11 @@ class TaskController extends Controller
             'title'       => $request->title,
             'description' => $request->description,
             'priority'    => $request->priority ?? 'medium',
-            'due_date'    => $request->due_date,
-            'started_at'  => $request->started_at,
-            'position'    => $position,
-            'status'      => 'todo',
+            'due_date'     => $request->due_date,
+            'started_at'   => $request->started_at,
+            'milestone_id' => $request->milestone_id,
+            'position'     => $position,
+            'status'       => 'todo',
         ]);
 
         if ($request->filled('assignee_ids')) {
@@ -109,7 +111,7 @@ class TaskController extends Controller
 
         $oldStatus = $task->status;
         $task->update($request->only([
-            'title', 'description', 'status', 'priority', 'due_date', 'started_at', 'position',
+            'title', 'description', 'status', 'priority', 'due_date', 'started_at', 'milestone_id', 'position',
         ]));
 
         // Notify watchers when status changes
