@@ -22,18 +22,65 @@ class TaskController extends Controller
         abort_if(!in_array($workspace->userRole($user), $roles), 403);
     }
 
-    public function index(Workspace $workspace, Project $project): JsonResponse
+    public function index(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
         $this->gate($workspace);
 
-        $tasks = $project->tasks()
-            ->with(['assignees', 'creator:id,name', 'labels'])
-            ->orderBy('status')
-            ->orderBy('position')
-            ->get()
-            ->groupBy('status');
+        $query = $project->tasks()
+            ->with(['assignees', 'creator:id,name', 'labels']);
 
-        return response()->json($tasks);
+        // ── Filters ─────────────────────────────────────────────────────────
+        if ($request->filled('label_ids')) {
+            $ids = (array) $request->label_ids;
+            $query->whereHas('labels', fn($q) => $q->whereIn('labels.id', $ids));
+        }
+
+        if ($request->filled('assignee_ids')) {
+            $ids = (array) $request->assignee_ids;
+            $query->whereHas('assignees', fn($q) => $q->whereIn('users.id', $ids));
+        }
+
+        if ($request->filled('milestone_id')) {
+            $query->where('milestone_id', $request->milestone_id);
+        }
+
+        if ($request->filled('due_date_from')) {
+            $query->whereDate('due_date', '>=', $request->due_date_from);
+        }
+
+        if ($request->filled('due_date_to')) {
+            $query->whereDate('due_date', '<=', $request->due_date_to);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->boolean('has_subtasks')) {
+            $query->whereHas('children');
+        }
+
+        if ($request->boolean('is_overdue')) {
+            $query->whereDate('due_date', '<', today())
+                  ->where('status', '!=', 'done');
+        }
+
+        if ($request->filled('watcher_id')) {
+            $query->whereHas('watchers', fn($q) => $q->where('users.id', $request->watcher_id));
+        }
+
+        // ── Sorting ──────────────────────────────────────────────────────────
+        $allowedSorts = ['due_date', 'created_at', 'title', 'estimate'];
+        $sortBy  = in_array($request->sort_by, $allowedSorts, true) ? $request->sort_by : null;
+        $sortDir = $request->sort_dir === 'desc' ? 'desc' : 'asc';
+
+        if ($sortBy) {
+            $query->orderBy($sortBy, $sortDir);
+        } else {
+            $query->orderBy('status')->orderBy('position');
+        }
+
+        return response()->json($query->get()->groupBy('status'));
     }
 
     public function store(Request $request, Workspace $workspace, Project $project): JsonResponse

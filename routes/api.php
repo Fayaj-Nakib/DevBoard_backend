@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BulkTaskController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\LabelController;
 use App\Http\Controllers\Api\MilestoneController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\RecurringTaskController;
 use App\Http\Controllers\Api\SprintController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TaskDependencyController;
@@ -53,8 +55,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('workspaces/{workspace}/projects/{project}/sprints/{sprint}/tasks',            [SprintController::class, 'addTask']);
     Route::delete('workspaces/{workspace}/projects/{project}/sprints/{sprint}/tasks/{task}',   [SprintController::class, 'removeTask']);
 
-    // Tasks (reorder must be registered before the resource so {task} doesn't match "reorder")
+    // Tasks (static segments must be registered before the resource to avoid {task} binding)
     Route::patch('workspaces/{workspace}/projects/{project}/tasks/reorder', [TaskController::class, 'reorder']);
+    Route::post('workspaces/{workspace}/projects/{project}/tasks/bulk',    [BulkTaskController::class, '__invoke']);
     Route::apiResource('workspaces/{workspace}/projects/{project}/tasks', TaskController::class);
 
     // Sub-tasks
@@ -64,6 +67,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Task — labels attach/detach
     Route::post('tasks/{task}/labels/{label}',   [LabelController::class, 'attach']);
     Route::delete('tasks/{task}/labels/{label}', [LabelController::class, 'detach']);
+
+    // Task — recurrence
+    Route::patch('tasks/{task}/recurrence', [RecurringTaskController::class, 'update']);
 
     // Task — watchers
     Route::post('tasks/{task}/watch',   [TaskController::class, 'watch']);

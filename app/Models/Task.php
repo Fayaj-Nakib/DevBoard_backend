@@ -18,12 +18,14 @@ class Task extends Model
         'project_id', 'parent_id', 'milestone_id', 'sprint_id', 'created_by',
         'title', 'description', 'status', 'priority', 'position',
         'due_date', 'started_at', 'estimate',
+        'recurrence_rule', 'recurrence_ends_at', 'recurrence_parent_id',
     ];
 
     protected $casts = [
-        'due_date'   => 'date',
-        'started_at' => 'date',
-        'estimate'   => 'integer',
+        'due_date'            => 'date',
+        'started_at'          => 'date',
+        'estimate'            => 'integer',
+        'recurrence_ends_at'  => 'datetime',
     ];
 
     public function project(): BelongsTo
@@ -93,5 +95,15 @@ class Task extends Model
     {
         return $this->belongsToMany(Task::class, 'task_dependencies', 'depends_on_id', 'task_id')
             ->withPivot('type');
+    }
+
+    public function recurrenceParent(): BelongsTo
+    {
+        return $this->belongsTo(Task::class, 'recurrence_parent_id');
+    }
+
+    public function recurrenceInstances(): HasMany
+    {
+        return $this->hasMany(Task::class, 'recurrence_parent_id');
     }
 }
