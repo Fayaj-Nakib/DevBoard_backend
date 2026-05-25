@@ -79,6 +79,19 @@ class WorkspaceController extends Controller
         return response()->json(['message' => 'Member added.']);
     }
 
+    public function listMembers(Workspace $workspace): JsonResponse
+    {
+        $this->gate($workspace);
+        $members = $workspace->members()->with('user:id,name,email')->get()
+            ->map(fn($m) => [
+                'id'    => $m->user->id,
+                'name'  => $m->user->name,
+                'email' => $m->user->email,
+                'role'  => $m->role,
+            ]);
+        return response()->json($members);
+    }
+
     public function removeMember(Workspace $workspace, User $user): JsonResponse
     {
         $this->gate($workspace, ['owner', 'admin']);

@@ -41,16 +41,18 @@ class TaskController extends Controller
         $this->gate($workspace);
 
         $request->validate([
-            'title'        => 'required|string|max:255',
-            'description'  => 'nullable|string',
-            'priority'     => 'in:low,medium,high',
-            'due_date'     => 'nullable|date',
-            'started_at'   => 'nullable|date',
-            'milestone_id' => 'nullable|string|exists:milestones,id',
-            'assignee_ids' => 'nullable|array',
+            'title'          => 'required|string|max:255',
+            'description'    => 'nullable|string',
+            'priority'       => 'in:low,medium,high',
+            'due_date'       => 'nullable|date',
+            'started_at'     => 'nullable|date',
+            'milestone_id'   => 'nullable|string|exists:milestones,id',
+            'sprint_id'      => 'nullable|string|exists:sprints,id',
+            'estimate'       => 'nullable|integer|min:0|max:9999',
+            'assignee_ids'   => 'nullable|array',
             'assignee_ids.*' => 'string|exists:users,id',
-            'label_ids'    => 'nullable|array',
-            'label_ids.*'  => 'string|exists:labels,id',
+            'label_ids'      => 'nullable|array',
+            'label_ids.*'    => 'string|exists:labels,id',
         ]);
 
         $position = $project->tasks()
@@ -58,14 +60,16 @@ class TaskController extends Controller
             ->max('position') + 1;
 
         $task = Task::create([
-            'project_id'  => $project->id,
-            'created_by'  => $request->user()->id,
-            'title'       => $request->title,
-            'description' => $request->description,
-            'priority'    => $request->priority ?? 'medium',
+            'project_id'   => $project->id,
+            'created_by'   => $request->user()->id,
+            'title'        => $request->title,
+            'description'  => $request->description,
+            'priority'     => $request->priority ?? 'medium',
             'due_date'     => $request->due_date,
             'started_at'   => $request->started_at,
             'milestone_id' => $request->milestone_id,
+            'sprint_id'    => $request->sprint_id,
+            'estimate'     => $request->estimate,
             'position'     => $position,
             'status'       => 'todo',
         ]);
@@ -93,7 +97,13 @@ class TaskController extends Controller
         abort_if($task->project_id !== $project->id, 404);
 
         return response()->json(
-            $task->load(['assignees', 'creator', 'comments.user', 'labels', 'attachments'])
+            $task->load([
+                'assignees', 'creator:id,name,email',
+                'comments.user:id,name,email',
+                'labels', 'attachments.uploader:id,name',
+                'watchers', 'milestone:id,name',
+                'sprint:id,name,status', 'children.assignees',
+            ])
         );
     }
 
@@ -107,11 +117,14 @@ class TaskController extends Controller
             'assignee_ids.*' => 'string|exists:users,id',
             'label_ids'      => 'sometimes|nullable|array',
             'label_ids.*'    => 'string|exists:labels,id',
+            'sprint_id'      => 'sometimes|nullable|string|exists:sprints,id',
+            'estimate'       => 'sometimes|nullable|integer|min:0|max:9999',
         ]);
 
         $oldStatus = $task->status;
         $task->update($request->only([
-            'title', 'description', 'status', 'priority', 'due_date', 'started_at', 'milestone_id', 'position',
+            'title', 'description', 'status', 'priority', 'due_date', 'started_at',
+            'milestone_id', 'sprint_id', 'estimate', 'position',
         ]));
 
         // Notify watchers when status changes
