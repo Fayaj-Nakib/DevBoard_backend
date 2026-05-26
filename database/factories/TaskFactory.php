@@ -19,7 +19,6 @@ class TaskFactory extends Factory
         return [
             'project_id' => Project::factory(),
             'created_by' => User::factory(),
-            'assignee_id' => null,
             'title' => fake()->sentence(4),
             'description' => fake()->optional()->paragraph(),
             'status' => fake()->randomElement(['todo', 'in_progress', 'in_review', 'done']),

@@ -125,7 +125,7 @@ class TaskTest extends TestCase
         $this->actingAs($this->user)
             ->postJson($this->base, [
                 'title' => 'Assigned task',
-                'assignee_id' => $assignee->id,
+                'assignee_ids' => [$assignee->id],
             ])
             ->assertStatus(201);
 
@@ -148,7 +148,7 @@ class TaskTest extends TestCase
             ->getJson("{$this->base}/{$task->id}")
             ->assertOk()
             ->assertJsonPath('id', $task->id)
-            ->assertJsonStructure(['id', 'title', 'comments', 'assignee', 'creator']);
+            ->assertJsonStructure(['id', 'title', 'comments', 'assignees', 'creator']);
     }
 
     // ------------------------------------------------------------------ update
@@ -182,12 +182,11 @@ class TaskTest extends TestCase
         $task = Task::factory()->create([
             'project_id' => $this->project->id,
             'created_by' => $this->user->id,
-            'assignee_id' => null,
         ]);
         $assignee = User::factory()->create();
 
         $this->actingAs($this->user)
-            ->patchJson("{$this->base}/{$task->id}", ['assignee_id' => $assignee->id])
+            ->patchJson("{$this->base}/{$task->id}", ['assignee_ids' => [$assignee->id]])
             ->assertOk();
 
         $this->assertDatabaseHas('notifications', ['user_id' => $assignee->id]);
