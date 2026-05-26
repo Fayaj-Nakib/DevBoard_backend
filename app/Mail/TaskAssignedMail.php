@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,7 +14,7 @@ class TaskAssignedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Task $task) {}
+    public function __construct(public Task $task, public User $assignee) {}
 
     public function envelope(): Envelope
     {

@@ -78,7 +78,7 @@
         </div>
 
         <div class="body">
-            <p>Hi <strong>{{ $task->assignee->name }}</strong>,</p>
+            <p>Hi <strong>{{ $assignee->name }}</strong>,</p>
             <p>
                 <strong>{{ $task->creator->name }}</strong> has assigned you a new task
                 in project <strong>{{ $task->project->name }}</strong>.

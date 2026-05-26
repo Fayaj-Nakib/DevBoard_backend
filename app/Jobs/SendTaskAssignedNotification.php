@@ -26,7 +26,8 @@ class SendTaskAssignedNotification implements ShouldQueue
 
     public function handle(): void
     {
-        Mail::to($this->assignee->email)->send(new TaskAssignedMail($this->task));
+        $this->task->loadMissing(['creator', 'project']);
+        Mail::to($this->assignee->email)->send(new TaskAssignedMail($this->task, $this->assignee));
 
         $notification = Notification::create([
             'user_id' => $this->assignee->id,
