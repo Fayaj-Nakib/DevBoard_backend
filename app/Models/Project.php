@@ -40,4 +40,14 @@ class Project extends Model
     {
         return $this->hasMany(Sprint::class)->orderBy('start_date');
     }
+
+    public function statuses()
+    {
+        return $this->hasMany(ProjectStatus::class)->orderBy('position');
+    }
+
+    public function taskTemplates()
+    {
+        return $this->hasMany(TaskTemplate::class)->orderBy('name');
+    }
 }

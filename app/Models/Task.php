@@ -15,9 +15,10 @@ class Task extends Model
     use HasFactory, HasUuid;
 
     protected $fillable = [
-        'project_id', 'parent_id', 'milestone_id', 'sprint_id', 'created_by',
+        'project_id', 'parent_id', 'milestone_id', 'sprint_id', 'project_status_id', 'created_by',
         'title', 'description', 'status', 'priority', 'position',
         'due_date', 'started_at', 'estimate',
+        'is_backlog', 'backlog_position',
         'recurrence_rule', 'recurrence_ends_at', 'recurrence_parent_id',
     ];
 
@@ -25,6 +26,8 @@ class Task extends Model
         'due_date'            => 'date',
         'started_at'          => 'date',
         'estimate'            => 'integer',
+        'is_backlog'          => 'boolean',
+        'backlog_position'    => 'integer',
         'recurrence_ends_at'  => 'datetime',
     ];
 
@@ -95,6 +98,11 @@ class Task extends Model
     {
         return $this->belongsToMany(Task::class, 'task_dependencies', 'depends_on_id', 'task_id')
             ->withPivot('type');
+    }
+
+    public function projectStatus(): BelongsTo
+    {
+        return $this->belongsTo(ProjectStatus::class);
     }
 
     public function recurrenceParent(): BelongsTo

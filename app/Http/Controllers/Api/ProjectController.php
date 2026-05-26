@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Models\ProjectStatus;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
@@ -24,12 +27,17 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
         ]);
 
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
         $project = Project::create([
             'workspace_id' => $workspace->id,
-            'created_by'   => $request->user()->id,
+            'created_by'   => $user->id,
             'name'         => $request->name,
             'description'  => $request->description,
         ]);
+
+        $this->seedDefaultStatuses($project);
 
         return response()->json($project, 201);
     }
@@ -59,6 +67,30 @@ class ProjectController extends Controller
 
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
     {
-        abort_if(!in_array($workspace->userRole(auth()->user()), $roles), 403);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        abort_if(!in_array($workspace->userRole($user), $roles), 403);
+    }
+
+    private function seedDefaultStatuses(Project $project): void
+    {
+        $defaults = [
+            ['slug' => 'todo',        'name' => 'To Do',       'color' => '#9CA3AF', 'is_done' => false, 'is_default' => true,  'position' => 1],
+            ['slug' => 'in_progress', 'name' => 'In Progress', 'color' => '#3B82F6', 'is_done' => false, 'is_default' => false, 'position' => 2],
+            ['slug' => 'in_review',   'name' => 'In Review',   'color' => '#8B5CF6', 'is_done' => false, 'is_default' => false, 'position' => 3],
+            ['slug' => 'done',        'name' => 'Done',        'color' => '#10B981', 'is_done' => true,  'is_default' => false, 'position' => 4],
+        ];
+
+        foreach ($defaults as $d) {
+            ProjectStatus::create([
+                'project_id' => $project->id,
+                'name'       => $d['name'],
+                'color'      => $d['color'],
+                'position'   => $d['position'],
+                'is_default' => $d['is_default'],
+                'is_done'    => $d['is_done'],
+                'slug'       => $d['slug'],
+            ]);
+        }
     }
 }

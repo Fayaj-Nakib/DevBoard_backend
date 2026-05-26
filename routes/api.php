@@ -2,16 +2,19 @@
 
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BacklogController;
 use App\Http\Controllers\Api\BulkTaskController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\LabelController;
 use App\Http\Controllers\Api\MilestoneController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ProjectStatusController;
 use App\Http\Controllers\Api\RecurringTaskController;
 use App\Http\Controllers\Api\SprintController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TaskDependencyController;
+use App\Http\Controllers\Api\TaskTemplateController;
 use App\Http\Controllers\Api\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +45,24 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Projects
     Route::apiResource('workspaces/{workspace}/projects', ProjectController::class);
+
+    // Project statuses
+    Route::get('workspaces/{workspace}/projects/{project}/statuses',                         [ProjectStatusController::class, 'index']);
+    Route::post('workspaces/{workspace}/projects/{project}/statuses',                        [ProjectStatusController::class, 'store']);
+    Route::patch('workspaces/{workspace}/projects/{project}/statuses/reorder',               [ProjectStatusController::class, 'reorder']);
+    Route::patch('workspaces/{workspace}/projects/{project}/statuses/{status}',              [ProjectStatusController::class, 'update']);
+    Route::delete('workspaces/{workspace}/projects/{project}/statuses/{status}',             [ProjectStatusController::class, 'destroy']);
+
+    // Task templates
+    Route::get('workspaces/{workspace}/projects/{project}/templates',                        [TaskTemplateController::class, 'index']);
+    Route::post('workspaces/{workspace}/projects/{project}/templates',                       [TaskTemplateController::class, 'store']);
+    Route::patch('workspaces/{workspace}/projects/{project}/templates/{template}',           [TaskTemplateController::class, 'update']);
+    Route::delete('workspaces/{workspace}/projects/{project}/templates/{template}',          [TaskTemplateController::class, 'destroy']);
+
+    // Backlog
+    Route::get('workspaces/{workspace}/projects/{project}/backlog',                          [BacklogController::class, 'index']);
+    Route::patch('workspaces/{workspace}/projects/{project}/backlog/reorder',                [BacklogController::class, 'reorder']);
+    Route::patch('workspaces/{workspace}/projects/{project}/tasks/{task}/backlog-toggle',    [BacklogController::class, 'toggle']);
 
     // Milestones
     Route::apiResource('workspaces/{workspace}/projects/{project}/milestones', MilestoneController::class);
