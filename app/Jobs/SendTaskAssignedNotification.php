@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Events\NotificationCreated;
 use App\Mail\TaskAssignedMail;
 use App\Models\Notification;
 use App\Models\Task;
@@ -26,7 +27,7 @@ class SendTaskAssignedNotification implements ShouldQueue
     {
         Mail::to($this->assignee->email)->send(new TaskAssignedMail($this->task));
 
-        Notification::create([
+        $notification = Notification::create([
             'user_id'    => $this->assignee->id,
             'type'       => 'TaskAssigned',
             'data'       => [
@@ -37,5 +38,6 @@ class SendTaskAssignedNotification implements ShouldQueue
             ],
             'created_at' => now(),
         ]);
+        broadcast(new NotificationCreated($notification));
     }
 }

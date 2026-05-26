@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Models\ProjectMember;
 use App\Models\ProjectStatus;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
@@ -38,6 +39,13 @@ class ProjectController extends Controller
         ]);
 
         $this->seedDefaultStatuses($project);
+
+        // Auto-add creator as project manager
+        ProjectMember::create([
+            'project_id' => $project->id,
+            'user_id'    => $user->id,
+            'role'       => 'manager',
+        ]);
 
         return response()->json($project, 201);
     }

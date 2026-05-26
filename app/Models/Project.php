@@ -50,4 +50,32 @@ class Project extends Model
     {
         return $this->hasMany(TaskTemplate::class)->orderBy('name');
     }
+
+    public function automationRules()
+    {
+        return $this->hasMany(AutomationRule::class);
+    }
+
+    public function projectMembers()
+    {
+        return $this->hasMany(ProjectMember::class);
+    }
+
+    public function customFieldDefinitions()
+    {
+        return $this->hasMany(CustomFieldDefinition::class)->orderBy('position');
+    }
+
+    public function importJobs()
+    {
+        return $this->hasMany(ImportJob::class);
+    }
+
+    /** Returns the project-level role for a user, or null if not explicitly set. */
+    public function userRole(User $user): ?string
+    {
+        return $this->projectMembers()
+            ->where('user_id', $user->id)
+            ->value('role');
+    }
 }

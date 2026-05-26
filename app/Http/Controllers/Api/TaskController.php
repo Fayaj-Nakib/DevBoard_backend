@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\TaskCreated as TaskCreatedEvent;
+use App\Events\TaskDeleted as TaskDeletedEvent;
+use App\Events\TaskUpdated as TaskUpdatedEvent;
 use App\Http\Controllers\Controller;
+use App\Jobs\EvaluateAutomationRules;
 use App\Jobs\SendTaskAssignedNotification;
 use App\Jobs\SendTaskWatcherNotification;
+use App\Jobs\WebhookDispatchJob;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskStatusHistory;
@@ -14,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class TaskController extends Controller
 {
@@ -191,6 +197,28 @@ class TaskController extends Controller
             $task->labels()->sync($labelIds);
         }
 
+        // Activity log
+        DB::table('activity_logs')->insert([
+            'id'           => (string) Str::uuid(),
+            'workspace_id' => $project->workspace_id,
+            'user_id'      => $user->id,
+            'subject_type' => 'task',
+            'subject_id'   => $task->id,
+            'action'       => 'task_created',
+            'payload'      => json_encode(['title' => $task->title, 'priority' => $task->priority]),
+            'created_at'   => now(),
+        ]);
+
+        // Dispatch automation rules + webhook + real-time broadcast
+        EvaluateAutomationRules::dispatch($task, 'task_created', [], $user->id);
+        WebhookDispatchJob::dispatch($project->workspace_id, 'task.created', [
+            'task_id'    => $task->id,
+            'title'      => $task->title,
+            'project_id' => $project->id,
+            'created_by' => $user->id,
+        ]);
+        broadcast(new TaskCreatedEvent($task->load(['assignees', 'labels', 'projectStatus'])))->toOthers();
+
         return response()->json($task->load(['assignees', 'labels', 'projectStatus']), 201);
     }
 
@@ -206,6 +234,7 @@ class TaskController extends Controller
                 'labels', 'attachments.uploader:id,name',
                 'watchers', 'milestone:id,name',
                 'sprint:id,name,status', 'children.assignees',
+                'customFieldValues.definition',
             ])
         );
     }
@@ -286,6 +315,19 @@ class TaskController extends Controller
                     if ($assignee->id !== $currentUserId) {
                         SendTaskAssignedNotification::dispatch($task, $assignee);
                     }
+                    DB::table('activity_logs')->insert([
+                        'id'           => (string) Str::uuid(),
+                        'workspace_id' => $project->workspace_id,
+                        'user_id'      => $currentUserId,
+                        'subject_type' => 'task',
+                        'subject_id'   => $task->id,
+                        'action'       => 'assignee_added',
+                        'payload'      => json_encode(['new_value' => $assignee->name]),
+                        'created_at'   => now(),
+                    ]);
+                    EvaluateAutomationRules::dispatch($task, 'assignee_added', [
+                        'user_id' => $assignee->id,
+                    ], $currentUserId);
                 }
             }
         }
@@ -293,6 +335,61 @@ class TaskController extends Controller
         if ($request->has('label_ids')) {
             $task->labels()->sync($request->label_ids ?? []);
         }
+
+        // Activity log for status change
+        if ($request->filled('project_status_id')
+            && $request->project_status_id !== $oldProjectStatusId
+        ) {
+            DB::table('activity_logs')->insert([
+                'id'           => (string) Str::uuid(),
+                'workspace_id' => $project->workspace_id,
+                'user_id'      => $request->user()->id,
+                'subject_type' => 'task',
+                'subject_id'   => $task->id,
+                'action'       => 'status_changed',
+                'payload'      => json_encode([
+                    'from_status_id' => $oldProjectStatusId,
+                    'to_status_id'   => $request->project_status_id,
+                    'new_value'      => $task->status,
+                ]),
+                'created_at'   => now(),
+            ]);
+
+            EvaluateAutomationRules::dispatch($task, 'status_changed', [
+                'from_status_id' => $oldProjectStatusId,
+                'to_status_id'   => $request->project_status_id,
+            ], $request->user()->id);
+
+            WebhookDispatchJob::dispatch($project->workspace_id, 'task.status_changed', [
+                'task_id'        => $task->id,
+                'from_status_id' => $oldProjectStatusId,
+                'to_status_id'   => $request->project_status_id,
+                'project_id'     => $project->id,
+            ]);
+        }
+
+        // Activity log for title/description changes
+        foreach (['title', 'description'] as $field) {
+            if ($request->filled($field)) {
+                DB::table('activity_logs')->insert([
+                    'id'           => (string) Str::uuid(),
+                    'workspace_id' => $project->workspace_id,
+                    'user_id'      => $request->user()->id,
+                    'subject_type' => 'task',
+                    'subject_id'   => $task->id,
+                    'action'       => "task_{$field}_updated",
+                    'payload'      => json_encode(['new_value' => $request->$field]),
+                    'created_at'   => now(),
+                ]);
+            }
+        }
+
+        WebhookDispatchJob::dispatch($project->workspace_id, 'task.updated', [
+            'task_id'    => $task->id,
+            'project_id' => $project->id,
+            'updated_by' => $request->user()->id,
+        ]);
+        broadcast(new TaskUpdatedEvent($task->load(['assignees', 'labels', 'projectStatus'])))->toOthers();
 
         return response()->json($task->load(['assignees', 'labels']));
     }
@@ -302,7 +399,30 @@ class TaskController extends Controller
         $this->gate($workspace);
         abort_if($task->project_id !== $project->id, 404);
 
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        DB::table('activity_logs')->insert([
+            'id'           => (string) Str::uuid(),
+            'workspace_id' => $project->workspace_id,
+            'user_id'      => $user->id,
+            'subject_type' => 'task',
+            'subject_id'   => $task->id,
+            'action'       => 'task_deleted',
+            'payload'      => json_encode(['title' => $task->title]),
+            'created_at'   => now(),
+        ]);
+
+        WebhookDispatchJob::dispatch($project->workspace_id, 'task.deleted', [
+            'task_id'    => $task->id,
+            'title'      => $task->title,
+            'project_id' => $project->id,
+            'deleted_by' => $user->id,
+        ]);
+        $taskId     = $task->id;
+        $taskStatus = $task->status;
         $task->delete();
+        broadcast(new TaskDeletedEvent($taskId, $project->id, $taskStatus))->toOthers();
 
         return response()->json(null, 204);
     }

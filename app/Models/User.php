@@ -12,13 +12,19 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, HasUuid, Notifiable;
 
-    protected $fillable = ['name', 'email', 'password'];
+    protected $fillable = [
+        'name', 'email', 'password',
+        'digest_enabled', 'digest_hour', 'last_digest_sent',
+    ];
 
     protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password'          => 'hashed',
+        'digest_enabled'    => 'boolean',
+        'digest_hour'       => 'integer',
+        'last_digest_sent'  => 'date',
     ];
 
     public function workspaces()
@@ -49,5 +55,10 @@ class User extends Authenticatable
     public function watchedTasks()
     {
         return $this->belongsToMany(Task::class, 'task_watchers');
+    }
+
+    public function timeLogs()
+    {
+        return $this->hasMany(TaskTimeLog::class);
     }
 }

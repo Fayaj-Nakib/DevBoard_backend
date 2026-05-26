@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\CommentCreated as CommentCreatedEvent;
 use App\Http\Controllers\Controller;
+use App\Jobs\EvaluateAutomationRules;
 use App\Jobs\SendMentionNotification;
 use App\Jobs\SendTaskWatcherNotification;
+use App\Jobs\WebhookDispatchJob;
 use App\Models\Comment;
 use App\Models\Task;
 use App\Models\User;
@@ -46,6 +49,20 @@ class CommentController extends Controller
                 ]);
             }
         }
+
+        EvaluateAutomationRules::dispatch($task, 'comment_added', [], $author->id);
+
+        WebhookDispatchJob::dispatch(
+            $task->project->workspace_id,
+            'comment.created',
+            [
+                'comment_id' => $comment->id,
+                'task_id'    => $task->id,
+                'author_id'  => $author->id,
+            ]
+        );
+
+        broadcast(new CommentCreatedEvent($comment))->toOthers();
 
         return response()->json($comment->load('user'), 201);
     }

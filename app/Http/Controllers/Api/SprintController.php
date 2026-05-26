@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\SprintUpdated as SprintUpdatedEvent;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Sprint;
@@ -83,6 +84,7 @@ class SprintController extends Controller
 
         $sprint->update($data);
         $sprint->append(['progress', 'velocity']);
+        broadcast(new SprintUpdatedEvent($sprint))->toOthers();
 
         return response()->json($sprint);
     }

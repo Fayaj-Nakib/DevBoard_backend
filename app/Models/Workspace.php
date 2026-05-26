@@ -46,6 +46,11 @@ class Workspace extends Model
         return $this->hasMany(Label::class);
     }
 
+    public function webhooks()
+    {
+        return $this->hasMany(Webhook::class);
+    }
+
     public function userRole(User $user): ?string
     {
         return $this->members()

@@ -114,4 +114,21 @@ class Task extends Model
     {
         return $this->hasMany(Task::class, 'recurrence_parent_id');
     }
+
+    public function timeLogs(): HasMany
+    {
+        return $this->hasMany(TaskTimeLog::class)->latest('started_at');
+    }
+
+    public function getTotalLoggedMinutesAttribute(): int
+    {
+        return (int) $this->timeLogs()
+            ->whereNotNull('duration_minutes')
+            ->sum('duration_minutes');
+    }
+
+    public function customFieldValues(): HasMany
+    {
+        return $this->hasMany(CustomFieldValue::class);
+    }
 }

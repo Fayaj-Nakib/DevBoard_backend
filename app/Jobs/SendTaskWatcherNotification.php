@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Events\NotificationCreated;
 use App\Models\Notification;
 use App\Models\Task;
 use App\Models\User;
@@ -27,7 +28,7 @@ class SendTaskWatcherNotification implements ShouldQueue
 
     public function handle(): void
     {
-        Notification::create([
+        $notification = Notification::create([
             'user_id'    => $this->watcher->id,
             'type'       => 'TaskUpdated',
             'data'       => array_merge([
@@ -38,5 +39,6 @@ class SendTaskWatcherNotification implements ShouldQueue
             ], $this->meta),
             'created_at' => now(),
         ]);
+        broadcast(new NotificationCreated($notification));
     }
 }
