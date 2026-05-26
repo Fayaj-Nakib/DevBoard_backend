@@ -54,6 +54,14 @@ class WorkspaceController extends Controller
         return response()->json($workspace);
     }
 
+    public function updateSecurity(Request $request, Workspace $workspace): JsonResponse
+    {
+        $this->gate($workspace, ['owner', 'admin']);
+        $request->validate(['require_2fa' => 'required|boolean']);
+        $workspace->update(['require_2fa' => $request->require_2fa]);
+        return response()->json(['require_2fa' => $workspace->require_2fa]);
+    }
+
     public function destroy(Workspace $workspace): JsonResponse
     {
         $this->gate($workspace, ['owner']);
@@ -105,6 +113,12 @@ class WorkspaceController extends Controller
 
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
     {
-        abort_if(!in_array($workspace->userRole(auth()->user()), $roles), 403, 'Forbidden.');
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        abort_if(!in_array($workspace->userRole($user), $roles), 403, 'Forbidden.');
+
+        if ($workspace->require_2fa && !$user->two_factor_confirmed_at) {
+            abort(response()->json(['message' => '2fa_required'], 403));
+        }
     }
 }

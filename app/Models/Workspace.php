@@ -12,7 +12,7 @@ class Workspace extends Model
 {
     use HasFactory, HasUuid, HasSlug;
 
-    protected $fillable = ['name', 'slug', 'owner_id'];
+    protected $fillable = ['name', 'slug', 'owner_id', 'require_2fa'];
 
     public function getSlugOptions(): SlugOptions
     {

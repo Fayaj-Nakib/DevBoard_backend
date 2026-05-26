@@ -15,6 +15,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'email', 'password',
         'digest_enabled', 'digest_hour', 'last_digest_sent',
+        'two_factor_secret', 'two_factor_confirmed_at', 'two_factor_recovery_codes',
     ];
 
     protected $hidden = ['password', 'remember_token'];

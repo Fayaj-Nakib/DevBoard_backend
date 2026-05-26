@@ -53,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('workspaces/{workspace}/members',          [WorkspaceController::class, 'addMember']);
     Route::delete('workspaces/{workspace}/members/{user}', [WorkspaceController::class, 'removeMember']);
     Route::get('workspaces/{workspace}/members',           [WorkspaceController::class, 'listMembers']);
+    Route::patch('workspaces/{workspace}/security',        [WorkspaceController::class, 'updateSecurity']);
 
     // Labels (workspace-scoped)
     Route::get('workspaces/{workspace}/labels',           [LabelController::class, 'index']);
