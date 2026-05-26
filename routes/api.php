@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\CustomFieldController;
 use App\Http\Controllers\Api\ExportController;
+use App\Http\Controllers\Api\GitHubController;
 use App\Http\Controllers\Api\ImportController;
 use App\Http\Controllers\Api\LabelController;
 use App\Http\Controllers\Api\MilestoneController;
@@ -32,6 +33,9 @@ use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\WorkloadController;
 use App\Http\Controllers\Api\WorkspaceController;
 use Illuminate\Support\Facades\Route;
+
+// Public — GitHub webhook (no auth)
+Route::post('webhooks/github/{workspace}', [GitHubController::class, 'webhook']);
 
 // Public
 Route::prefix('auth')->group(function () {
@@ -207,4 +211,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('workspaces/{workspace}/projects/{project}/export', [ExportController::class, 'export']);
     Route::post('workspaces/{workspace}/projects/{project}/import', [ImportController::class, 'import']);
     Route::get('import-jobs/{importJob}',                           [ImportController::class, 'status']);
+
+    // GitHub integration
+    Route::get('workspaces/{workspace}/github',                                     [GitHubController::class, 'status']);
+    Route::post('workspaces/{workspace}/github',                                    [GitHubController::class, 'connect']);
+    Route::delete('workspaces/{workspace}/github',                                  [GitHubController::class, 'disconnect']);
+    Route::patch('workspaces/{workspace}/projects/{project}/github/repo',           [GitHubController::class, 'linkRepo']);
+    Route::get('workspaces/{workspace}/projects/{project}/github/issues',           [GitHubController::class, 'listIssues']);
+    Route::patch('tasks/{task}/github',                                              [GitHubController::class, 'linkTask']);
 });

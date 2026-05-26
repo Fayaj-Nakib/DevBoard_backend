@@ -51,6 +51,11 @@ class Workspace extends Model
         return $this->hasMany(Webhook::class);
     }
 
+    public function githubIntegration()
+    {
+        return $this->hasOne(GitHubIntegration::class);
+    }
+
     public function userRole(User $user): ?string
     {
         return $this->members()

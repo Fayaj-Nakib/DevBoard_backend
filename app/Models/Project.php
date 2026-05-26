@@ -11,7 +11,7 @@ class Project extends Model
     use HasFactory, HasUuid;
 
     protected $fillable = [
-        'workspace_id', 'created_by', 'name', 'description', 'status',
+        'workspace_id', 'created_by', 'name', 'description', 'status', 'github_repo',
     ];
 
     protected $casts = ['archived_at' => 'datetime'];
