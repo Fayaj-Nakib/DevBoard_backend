@@ -23,7 +23,7 @@ class NotificationController extends Controller
 
         return response()->json([
             'notifications' => $notifications,
-            'unread_count'  => $unreadCount,
+            'unread_count' => $unreadCount,
         ]);
     }
 
@@ -31,12 +31,14 @@ class NotificationController extends Controller
     {
         abort_if($notification->user_id !== $request->user()->id, 403);
         $notification->update(['read_at' => now()]);
+
         return response()->json($notification);
     }
 
     public function readAll(Request $request): JsonResponse
     {
         $request->user()->notifications()->unread()->update(['read_at' => now()]);
+
         return response()->json(['message' => 'All marked as read.']);
     }
 }

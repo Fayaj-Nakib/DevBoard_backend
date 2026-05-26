@@ -2,14 +2,14 @@
 
 namespace App\Services;
 
-use Illuminate\Http\Client\Response;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
 class GitHubService
 {
     private const BASE = 'https://api.github.com';
 
-    private function client(string $token): \Illuminate\Http\Client\PendingRequest
+    private function client(string $token): PendingRequest
     {
         return Http::withToken($token)
             ->withHeaders(['Accept' => 'application/vnd.github+json', 'X-GitHub-Api-Version' => '2022-11-28'])
@@ -20,6 +20,7 @@ class GitHubService
     {
         $response = $this->client($token)->get('/user');
         $response->throw();
+
         return $response->json();
     }
 
@@ -27,17 +28,19 @@ class GitHubService
     {
         $response = $this->client($token)->get("/repos/{$repo}");
         $response->throw();
+
         return $response->json();
     }
 
     public function listOpenIssues(string $token, string $repo, int $page = 1): array
     {
         $response = $this->client($token)->get("/repos/{$repo}/issues", [
-            'state'    => 'open',
+            'state' => 'open',
             'per_page' => 50,
-            'page'     => $page,
+            'page' => $page,
         ]);
         $response->throw();
+
         return $response->json();
     }
 
@@ -45,6 +48,7 @@ class GitHubService
     {
         $response = $this->client($token)->get("/repos/{$repo}/issues/{$number}");
         $response->throw();
+
         return $response->json();
     }
 
@@ -52,15 +56,17 @@ class GitHubService
     {
         $response = $this->client($token)->get("/repos/{$repo}/pulls/{$number}");
         $response->throw();
+
         return $response->json();
     }
 
     public function verifyWebhookSignature(string $rawPayload, string $signatureHeader, string $secret): bool
     {
-        if (!str_starts_with($signatureHeader, 'sha256=')) {
+        if (! str_starts_with($signatureHeader, 'sha256=')) {
             return false;
         }
-        $expected = 'sha256=' . hash_hmac('sha256', $rawPayload, $secret);
+        $expected = 'sha256='.hash_hmac('sha256', $rawPayload, $secret);
+
         return hash_equals($expected, $signatureHeader);
     }
 }

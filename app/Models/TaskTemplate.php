@@ -18,7 +18,7 @@ class TaskTemplate extends Model
     protected $casts = [
         'label_ids' => 'array',
         'checklist' => 'array',
-        'estimate'  => 'integer',
+        'estimate' => 'integer',
     ];
 
     public function project(): BelongsTo

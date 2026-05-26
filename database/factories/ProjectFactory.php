@@ -18,10 +18,10 @@ class ProjectFactory extends Factory
     {
         return [
             'workspace_id' => Workspace::factory(),
-            'created_by'   => User::factory(),
-            'name'         => fake()->words(3, true),
-            'description'  => fake()->optional()->sentence(),
-            'status'       => 'active',
+            'created_by' => User::factory(),
+            'name' => fake()->words(3, true),
+            'description' => fake()->optional()->sentence(),
+            'status' => 'active',
         ];
     }
 }

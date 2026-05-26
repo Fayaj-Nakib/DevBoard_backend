@@ -9,19 +9,20 @@ use Illuminate\Console\Command;
 class SendDigestEmailsCommand extends Command
 {
     protected $signature = 'digest:send';
+
     protected $description = 'Send daily digest emails to users whose digest_hour matches the current UTC hour';
 
     public function handle(): int
     {
         $currentHour = now()->hour;
-        $today       = now()->toDateString();
+        $today = now()->toDateString();
 
         $users = User::query()
             ->where('digest_enabled', true)
             ->where('digest_hour', $currentHour)
             ->where(function ($q) use ($today) {
                 $q->whereNull('last_digest_sent')
-                  ->orWhere('last_digest_sent', '<', $today);
+                    ->orWhere('last_digest_sent', '<', $today);
             })
             ->get();
 

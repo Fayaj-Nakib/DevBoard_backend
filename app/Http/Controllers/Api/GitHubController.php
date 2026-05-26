@@ -22,15 +22,15 @@ class GitHubController extends Controller
         $this->wsGate($workspace, ['owner', 'admin', 'member', 'guest']);
 
         $integration = $workspace->githubIntegration;
-        if (!$integration) {
+        if (! $integration) {
             return response()->json(['connected' => false]);
         }
 
         return response()->json([
-            'connected'        => true,
-            'github_username'  => $integration->github_username,
-            'webhook_url'      => url("/api/webhooks/github/{$workspace->id}"),
-            'webhook_secret'   => $integration->webhook_secret,
+            'connected' => true,
+            'github_username' => $integration->github_username,
+            'webhook_url' => url("/api/webhooks/github/{$workspace->id}"),
+            'webhook_secret' => $integration->webhook_secret,
         ]);
     }
 
@@ -50,17 +50,17 @@ class GitHubController extends Controller
         $integration = GitHubIntegration::updateOrCreate(
             ['workspace_id' => $workspace->id],
             [
-                'access_token'     => $data['token'],
-                'github_username'  => $ghUser['login'],
-                'webhook_secret'   => Str::random(32),
+                'access_token' => $data['token'],
+                'github_username' => $ghUser['login'],
+                'webhook_secret' => Str::random(32),
             ]
         );
 
         return response()->json([
-            'connected'       => true,
+            'connected' => true,
             'github_username' => $integration->github_username,
-            'webhook_url'     => url("/api/webhooks/github/{$workspace->id}"),
-            'webhook_secret'  => $integration->webhook_secret,
+            'webhook_url' => url("/api/webhooks/github/{$workspace->id}"),
+            'webhook_secret' => $integration->webhook_secret,
         ], 201);
     }
 
@@ -81,11 +81,11 @@ class GitHubController extends Controller
         abort_if($project->workspace_id !== $workspace->id, 404);
 
         $integration = $workspace->githubIntegration;
-        abort_if(!$integration, 422, 'GitHub is not connected for this workspace.');
+        abort_if(! $integration, 422, 'GitHub is not connected for this workspace.');
 
         $data = $request->validate(['github_repo' => 'nullable|string|regex:/^[^\/]+\/[^\/]+$/']);
 
-        if (!empty($data['github_repo'])) {
+        if (! empty($data['github_repo'])) {
             try {
                 $this->github->getRepo($integration->decrypted_token, $data['github_repo']);
             } catch (\Throwable) {
@@ -104,8 +104,8 @@ class GitHubController extends Controller
         $this->projectGate($workspace, $project);
 
         $integration = $workspace->githubIntegration;
-        abort_if(!$integration, 422, 'GitHub is not connected for this workspace.');
-        abort_if(!$project->github_repo, 422, 'No GitHub repository linked to this project.');
+        abort_if(! $integration, 422, 'GitHub is not connected for this workspace.');
+        abort_if(! $project->github_repo, 422, 'No GitHub repository linked to this project.');
 
         try {
             $issues = $this->github->listOpenIssues(
@@ -118,14 +118,14 @@ class GitHubController extends Controller
         }
 
         // Filter out PRs (GitHub issues endpoint returns both)
-        $issues = array_values(array_filter($issues, fn($i) => !isset($i['pull_request'])));
+        $issues = array_values(array_filter($issues, fn ($i) => ! isset($i['pull_request'])));
 
-        return response()->json(array_map(fn($i) => [
+        return response()->json(array_map(fn ($i) => [
             'number' => $i['number'],
-            'title'  => $i['title'],
-            'state'  => $i['state'],
-            'url'    => $i['html_url'],
-            'labels' => array_map(fn($l) => ['name' => $l['name'], 'color' => $l['color']], $i['labels'] ?? []),
+            'title' => $i['title'],
+            'state' => $i['state'],
+            'url' => $i['html_url'],
+            'labels' => array_map(fn ($l) => ['name' => $l['name'], 'color' => $l['color']], $i['labels'] ?? []),
         ], $issues));
     }
 
@@ -134,20 +134,20 @@ class GitHubController extends Controller
     {
         $this->taskGuestCheck($task);
         $workspace = $task->project->workspace;
-        abort_if(!in_array($workspace->userRole($request->user()), ['owner', 'admin', 'member']), 403);
+        abort_if(! in_array($workspace->userRole($request->user()), ['owner', 'admin', 'member']), 403);
 
         $data = $request->validate([
             'github_issue_number' => 'nullable|integer|min:1',
-            'github_pr_number'    => 'nullable|integer|min:1',
-            'github_pr_state'     => 'nullable|string|in:open,closed,merged',
+            'github_pr_number' => 'nullable|integer|min:1',
+            'github_pr_state' => 'nullable|string|in:open,closed,merged',
         ]);
 
         $task->update($data);
 
         return response()->json([
             'github_issue_number' => $task->github_issue_number,
-            'github_pr_number'    => $task->github_pr_number,
-            'github_pr_state'     => $task->github_pr_state,
+            'github_pr_number' => $task->github_pr_number,
+            'github_pr_state' => $task->github_pr_state,
         ]);
     }
 
@@ -155,24 +155,24 @@ class GitHubController extends Controller
     public function webhook(Request $request, Workspace $workspace): JsonResponse
     {
         $integration = $workspace->githubIntegration;
-        if (!$integration) {
+        if (! $integration) {
             return response()->json(['message' => 'Not configured.'], 404);
         }
 
         $signature = $request->header('X-Hub-Signature-256', '');
         $rawPayload = $request->getContent();
 
-        if (!$this->github->verifyWebhookSignature($rawPayload, $signature, $integration->webhook_secret)) {
+        if (! $this->github->verifyWebhookSignature($rawPayload, $signature, $integration->webhook_secret)) {
             return response()->json(['message' => 'Invalid signature.'], 401);
         }
 
-        $event   = $request->header('X-GitHub-Event');
+        $event = $request->header('X-GitHub-Event');
         $payload = $request->json()->all();
 
         match ($event) {
             'pull_request' => $this->handlePullRequest($payload),
-            'issues'       => $this->handleIssues($payload),
-            default        => null,
+            'issues' => $this->handleIssues($payload),
+            default => null,
         };
 
         return response()->json(['ok' => true]);
@@ -181,18 +181,22 @@ class GitHubController extends Controller
     private function handlePullRequest(array $payload): void
     {
         $action = $payload['action'] ?? '';
-        $pr     = $payload['pull_request'] ?? [];
+        $pr = $payload['pull_request'] ?? [];
         $number = (int) ($pr['number'] ?? 0);
 
-        if (!$number) return;
+        if (! $number) {
+            return;
+        }
 
         $state = match ($action) {
             'closed' => $pr['merged'] ? 'merged' : 'closed',
             'opened', 'reopened' => 'open',
-            default  => null,
+            default => null,
         };
 
-        if ($state === null) return;
+        if ($state === null) {
+            return;
+        }
 
         Task::where('github_pr_number', $number)->update(['github_pr_state' => $state]);
     }
@@ -202,7 +206,9 @@ class GitHubController extends Controller
         $action = $payload['action'] ?? '';
         $number = (int) ($payload['issue']['number'] ?? 0);
 
-        if (!$number) return;
+        if (! $number) {
+            return;
+        }
 
         if ($action === 'closed') {
             Task::where('github_issue_number', $number)

@@ -13,15 +13,15 @@ class AuthTest extends TestCase
     public function test_user_can_register(): void
     {
         $response = $this->postJson('/api/auth/register', [
-            'name'                  => 'Alice Smith',
-            'email'                 => 'alice@example.com',
-            'password'              => 'password123',
+            'name' => 'Alice Smith',
+            'email' => 'alice@example.com',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
 
         $response->assertStatus(201)
             ->assertJsonStructure([
-                'user'  => ['id', 'name', 'email'],
+                'user' => ['id', 'name', 'email'],
                 'token',
             ]);
 
@@ -31,11 +31,11 @@ class AuthTest extends TestCase
     public function test_register_requires_name(): void
     {
         $this->postJson('/api/auth/register', [
-            'email'                 => 'alice@example.com',
-            'password'              => 'password123',
+            'email' => 'alice@example.com',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ])->assertUnprocessable()
-          ->assertJsonValidationErrors(['name']);
+            ->assertJsonValidationErrors(['name']);
     }
 
     public function test_register_requires_unique_email(): void
@@ -43,23 +43,23 @@ class AuthTest extends TestCase
         User::factory()->create(['email' => 'alice@example.com']);
 
         $this->postJson('/api/auth/register', [
-            'name'                  => 'Alice Copy',
-            'email'                 => 'alice@example.com',
-            'password'              => 'password123',
+            'name' => 'Alice Copy',
+            'email' => 'alice@example.com',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ])->assertUnprocessable()
-          ->assertJsonValidationErrors(['email']);
+            ->assertJsonValidationErrors(['email']);
     }
 
     public function test_register_requires_password_confirmation(): void
     {
         $this->postJson('/api/auth/register', [
-            'name'                  => 'Alice Smith',
-            'email'                 => 'alice@example.com',
-            'password'              => 'password123',
+            'name' => 'Alice Smith',
+            'email' => 'alice@example.com',
+            'password' => 'password123',
             'password_confirmation' => 'wrong',
         ])->assertUnprocessable()
-          ->assertJsonValidationErrors(['password']);
+            ->assertJsonValidationErrors(['password']);
     }
 
     public function test_user_can_login(): void
@@ -69,7 +69,7 @@ class AuthTest extends TestCase
         ]);
 
         $response = $this->postJson('/api/auth/login', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'secret123',
         ]);
 
@@ -83,7 +83,7 @@ class AuthTest extends TestCase
         $user = User::factory()->create();
 
         $this->postJson('/api/auth/login', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'wrong-password',
         ])->assertStatus(401);
     }
@@ -91,7 +91,7 @@ class AuthTest extends TestCase
     public function test_login_fails_with_unknown_email(): void
     {
         $this->postJson('/api/auth/login', [
-            'email'    => 'nobody@example.com',
+            'email' => 'nobody@example.com',
             'password' => 'password123',
         ])->assertStatus(401);
     }
@@ -116,7 +116,7 @@ class AuthTest extends TestCase
     public function test_user_can_logout(): void
     {
         /** @var User $user */
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $token = $user->createToken('test-token')->plainTextToken;
 
         $this->withToken($token)

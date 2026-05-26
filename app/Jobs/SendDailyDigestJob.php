@@ -17,19 +17,20 @@ class SendDailyDigestJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries  = 3;
+    public int $tries = 3;
+
     public int $backoff = 60;
 
     public function __construct(public User $user) {}
 
     public function handle(): void
     {
-        $today     = now()->toDateString();
+        $today = now()->toDateString();
         $yesterday = now()->subDay();
 
         // Tasks due today assigned to this user
         $dueTodayTasks = Task::query()
-            ->whereHas('assignees', fn($q) => $q->where('users.id', $this->user->id))
+            ->whereHas('assignees', fn ($q) => $q->where('users.id', $this->user->id))
             ->whereDate('due_date', $today)
             ->where('status', '!=', 'done')
             ->with('project:id,name')
@@ -37,7 +38,7 @@ class SendDailyDigestJob implements ShouldQueue
 
         // Overdue tasks assigned to this user
         $overdueTasks = Task::query()
-            ->whereHas('assignees', fn($q) => $q->where('users.id', $this->user->id))
+            ->whereHas('assignees', fn ($q) => $q->where('users.id', $this->user->id))
             ->whereDate('due_date', '<', $today)
             ->where('status', '!=', 'done')
             ->with('project:id,name')
@@ -45,7 +46,7 @@ class SendDailyDigestJob implements ShouldQueue
 
         // Watched tasks with recent activity
         $watchedActivityTasks = Task::query()
-            ->whereHas('watchers', fn($q) => $q->where('users.id', $this->user->id))
+            ->whereHas('watchers', fn ($q) => $q->where('users.id', $this->user->id))
             ->where('updated_at', '>=', $yesterday)
             ->whereNotIn('id', $dueTodayTasks->pluck('id')->merge($overdueTasks->pluck('id')))
             ->with('project:id,name')

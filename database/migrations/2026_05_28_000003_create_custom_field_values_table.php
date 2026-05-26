@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('custom_field_values', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('field_definition_id')
-                  ->constrained('custom_field_definitions')
-                  ->cascadeOnDelete();
+                ->constrained('custom_field_definitions')
+                ->cascadeOnDelete();
             $table->foreignUuid('task_id')->constrained()->cascadeOnDelete();
             $table->text('value')->nullable();
             $table->timestamps();

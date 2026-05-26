@@ -12,7 +12,7 @@ class CustomFieldDefinition extends Model
     protected $fillable = ['project_id', 'name', 'field_type', 'options', 'position', 'is_required'];
 
     protected $casts = [
-        'options'     => 'array',
+        'options' => 'array',
         'is_required' => 'boolean',
     ];
 

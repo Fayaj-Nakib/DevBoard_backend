@@ -34,14 +34,14 @@ return new class extends Migration
         foreach ($projects as $project) {
             foreach ($defaults as $d) {
                 DB::table('project_statuses')->insert([
-                    'id'         => (string) Str::uuid(),
+                    'id' => (string) Str::uuid(),
                     'project_id' => $project->id,
-                    'name'       => $d['name'],
-                    'color'      => $d['color'],
-                    'position'   => $d['position'],
+                    'name' => $d['name'],
+                    'color' => $d['color'],
+                    'position' => $d['position'],
                     'is_default' => $d['is_default'],
-                    'is_done'    => $d['is_done'],
-                    'slug'       => $d['slug'],
+                    'is_done' => $d['is_done'],
+                    'slug' => $d['slug'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

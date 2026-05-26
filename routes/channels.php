@@ -23,14 +23,20 @@ Broadcast::channel('private-user.{userId}', function ($user, $userId) {
 // Workspace channel — any workspace member may subscribe
 Broadcast::channel('private-workspace.{workspaceId}', function ($user, $workspaceId) {
     $workspace = Workspace::find($workspaceId);
-    if (!$workspace) return false;
+    if (! $workspace) {
+        return false;
+    }
+
     return $workspace->userRole($user) !== null;
 });
 
 // Project channel — any workspace member with access to this project may subscribe
 Broadcast::channel('private-project.{projectId}', function ($user, $projectId) {
     $project = Project::find($projectId);
-    if (!$project) return false;
+    if (! $project) {
+        return false;
+    }
     $workspace = $project->workspace;
+
     return $workspace->userRole($user) !== null;
 });

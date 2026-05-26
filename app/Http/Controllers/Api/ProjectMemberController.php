@@ -15,19 +15,21 @@ class ProjectMemberController extends Controller
 {
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), $roles), 403);
+        abort_if(! in_array($workspace->userRole($user), $roles), 403);
     }
 
     private function requireManagerOrAdmin(Workspace $workspace, Project $project): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
         $wsRole = $workspace->userRole($user);
 
         // Workspace owner/admin bypass project role checks
-        if (in_array($wsRole, ['owner', 'admin'])) return;
+        if (in_array($wsRole, ['owner', 'admin'])) {
+            return;
+        }
 
         $projectRole = $project->userRole($user);
         abort_if($projectRole !== 'manager', 403);
@@ -41,9 +43,9 @@ class ProjectMemberController extends Controller
         $members = $project->projectMembers()
             ->with('user:id,name,email')
             ->get()
-            ->map(fn($m) => [
-                'user'       => $m->user,
-                'role'       => $m->role,
+            ->map(fn ($m) => [
+                'user' => $m->user,
+                'role' => $m->role,
                 'created_at' => $m->created_at,
             ]);
 
@@ -57,7 +59,7 @@ class ProjectMemberController extends Controller
 
         $data = $request->validate([
             'user_id' => 'required|string|exists:users,id',
-            'role'    => 'required|in:viewer,editor,manager',
+            'role' => 'required|in:viewer,editor,manager',
         ]);
 
         // User must already be a workspace member

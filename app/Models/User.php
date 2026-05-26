@@ -22,10 +22,10 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password'          => 'hashed',
-        'digest_enabled'    => 'boolean',
-        'digest_hour'       => 'integer',
-        'last_digest_sent'  => 'date',
+        'password' => 'hashed',
+        'digest_enabled' => 'boolean',
+        'digest_hour' => 'integer',
+        'last_digest_sent' => 'date',
     ];
 
     public function workspaces()

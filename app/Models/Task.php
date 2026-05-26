@@ -24,14 +24,14 @@ class Task extends Model
     ];
 
     protected $casts = [
-        'due_date'            => 'date',
-        'started_at'          => 'date',
-        'estimate'            => 'integer',
-        'is_backlog'          => 'boolean',
-        'backlog_position'    => 'integer',
-        'recurrence_ends_at'   => 'datetime',
-        'github_issue_number'  => 'integer',
-        'github_pr_number'     => 'integer',
+        'due_date' => 'date',
+        'started_at' => 'date',
+        'estimate' => 'integer',
+        'is_backlog' => 'boolean',
+        'backlog_position' => 'integer',
+        'recurrence_ends_at' => 'datetime',
+        'github_issue_number' => 'integer',
+        'github_pr_number' => 'integer',
     ];
 
     public function project(): BelongsTo

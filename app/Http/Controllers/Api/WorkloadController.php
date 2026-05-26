@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,9 +14,9 @@ class WorkloadController extends Controller
 {
     private function gate(Workspace $workspace): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
+        abort_if(! in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
     }
 
     public function index(Request $request, Workspace $workspace, Project $project): JsonResponse
@@ -38,16 +39,16 @@ class WorkloadController extends Controller
 
         // Group by assignee
         $byAssignee = [];
-        $today      = now()->toDateString();
+        $today = now()->toDateString();
 
         foreach ($tasks as $task) {
             foreach ($task->assignees as $assignee) {
-                if (!isset($byAssignee[$assignee->id])) {
+                if (! isset($byAssignee[$assignee->id])) {
                     $byAssignee[$assignee->id] = [
-                        'user'           => ['id' => $assignee->id, 'name' => $assignee->name, 'email' => $assignee->email],
-                        'tasks'          => [],
-                        'total_tasks'    => 0,
-                        'overdue_count'  => 0,
+                        'user' => ['id' => $assignee->id, 'name' => $assignee->name, 'email' => $assignee->email],
+                        'tasks' => [],
+                        'total_tasks' => 0,
+                        'overdue_count' => 0,
                         'total_estimate' => 0,
                     ];
                 }
@@ -57,12 +58,12 @@ class WorkloadController extends Controller
                     && $task->status !== 'done';
 
                 $byAssignee[$assignee->id]['tasks'][] = [
-                    'id'         => $task->id,
-                    'title'      => $task->title,
-                    'due_date'   => $task->due_date?->toDateString(),
-                    'status'     => $task->status,
-                    'priority'   => $task->priority,
-                    'estimate'   => $task->estimate,
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'due_date' => $task->due_date?->toDateString(),
+                    'status' => $task->status,
+                    'priority' => $task->priority,
+                    'estimate' => $task->estimate,
                     'is_overdue' => $isOverdue,
                 ];
 
@@ -75,7 +76,7 @@ class WorkloadController extends Controller
         }
 
         // Sort by total_tasks descending
-        usort($byAssignee, fn($a, $b) => $b['total_tasks'] - $a['total_tasks']);
+        usort($byAssignee, fn ($a, $b) => $b['total_tasks'] - $a['total_tasks']);
 
         return response()->json(array_values($byAssignee));
     }

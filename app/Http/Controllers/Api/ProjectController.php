@@ -6,18 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\ProjectStatus;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
     public function index(Workspace $workspace): JsonResponse
     {
         $this->gate($workspace);
-        $user  = Auth::user();
+        $user = Auth::user();
         $query = $workspace->projects()->withCount('tasks');
 
         if ($workspace->userRole($user) === 'guest') {
@@ -32,18 +32,18 @@ class ProjectController extends Controller
     {
         $this->gate($workspace, ['owner', 'admin', 'member']);
         $request->validate([
-            'name'        => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
 
         $project = Project::create([
             'workspace_id' => $workspace->id,
-            'created_by'   => $user->id,
-            'name'         => $request->name,
-            'description'  => $request->description,
+            'created_by' => $user->id,
+            'name' => $request->name,
+            'description' => $request->description,
         ]);
 
         $this->seedDefaultStatuses($project);
@@ -51,8 +51,8 @@ class ProjectController extends Controller
         // Auto-add creator as project manager
         ProjectMember::create([
             'project_id' => $project->id,
-            'user_id'    => $user->id,
-            'role'       => 'manager',
+            'user_id' => $user->id,
+            'role' => 'manager',
         ]);
 
         return response()->json($project, 201);
@@ -61,8 +61,9 @@ class ProjectController extends Controller
     public function show(Workspace $workspace, Project $project): JsonResponse
     {
         $this->projectGate($workspace, $project);
+
         return response()->json(
-            $project->load(['tasks' => fn($q) => $q->orderBy('position')])
+            $project->load(['tasks' => fn ($q) => $q->orderBy('position')])
         );
     }
 
@@ -71,6 +72,7 @@ class ProjectController extends Controller
         $this->gate($workspace, ['owner', 'admin']);
         $request->validate(['name' => 'required|string|max:255']);
         $project->update($request->only('name', 'description', 'status'));
+
         return response()->json($project);
     }
 
@@ -78,14 +80,15 @@ class ProjectController extends Controller
     {
         $this->gate($workspace, ['owner', 'admin']);
         $project->delete();
+
         return response()->json(null, 204);
     }
 
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), $roles), 403);
+        abort_if(! in_array($workspace->userRole($user), $roles), 403);
     }
 
     private function seedDefaultStatuses(Project $project): void
@@ -100,12 +103,12 @@ class ProjectController extends Controller
         foreach ($defaults as $d) {
             ProjectStatus::create([
                 'project_id' => $project->id,
-                'name'       => $d['name'],
-                'color'      => $d['color'],
-                'position'   => $d['position'],
+                'name' => $d['name'],
+                'color' => $d['color'],
+                'position' => $d['position'],
                 'is_default' => $d['is_default'],
-                'is_done'    => $d['is_done'],
-                'slug'       => $d['slug'],
+                'is_done' => $d['is_done'],
+                'slug' => $d['slug'],
             ]);
         }
     }

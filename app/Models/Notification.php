@@ -14,8 +14,8 @@ class Notification extends Model
     protected $fillable = ['user_id', 'type', 'data', 'read_at', 'created_at'];
 
     protected $casts = [
-        'data'       => 'array',
-        'read_at'    => 'datetime',
+        'data' => 'array',
+        'read_at' => 'datetime',
         'created_at' => 'datetime',
     ];
 

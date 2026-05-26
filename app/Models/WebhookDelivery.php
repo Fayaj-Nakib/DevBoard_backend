@@ -17,9 +17,9 @@ class WebhookDelivery extends Model
     ];
 
     protected $casts = [
-        'payload'      => 'array',
+        'payload' => 'array',
         'delivered_at' => 'datetime',
-        'failed_at'    => 'datetime',
+        'failed_at' => 'datetime',
     ];
 
     public function webhook(): BelongsTo

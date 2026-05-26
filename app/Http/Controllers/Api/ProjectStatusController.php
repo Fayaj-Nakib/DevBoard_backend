@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectStatus;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,14 +16,15 @@ class ProjectStatusController extends Controller
 {
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), $roles), 403);
+        abort_if(! in_array($workspace->userRole($user), $roles), 403);
     }
 
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
         $this->projectGate($workspace, $project);
+
         return response()->json($project->statuses()->get());
     }
 
@@ -31,9 +33,9 @@ class ProjectStatusController extends Controller
         $this->gate($workspace, ['owner', 'admin']);
 
         $request->validate([
-            'name'     => 'required|string|max:100',
-            'color'    => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'is_done'  => 'boolean',
+            'name' => 'required|string|max:100',
+            'color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'is_done' => 'boolean',
             'position' => 'nullable|integer|min:1',
         ]);
 
@@ -42,12 +44,12 @@ class ProjectStatusController extends Controller
 
         $status = ProjectStatus::create([
             'project_id' => $project->id,
-            'name'       => $request->name,
-            'color'      => $request->color ?? '#9CA3AF',
-            'position'   => $position,
+            'name' => $request->name,
+            'color' => $request->color ?? '#9CA3AF',
+            'position' => $position,
             'is_default' => false,
-            'is_done'    => $request->boolean('is_done'),
-            'slug'       => null,
+            'is_done' => $request->boolean('is_done'),
+            'slug' => null,
         ]);
 
         return response()->json($status, 201);
@@ -59,8 +61,8 @@ class ProjectStatusController extends Controller
         abort_if($status->project_id !== $project->id, 404);
 
         $request->validate([
-            'name'    => 'sometimes|required|string|max:100',
-            'color'   => 'sometimes|nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'name' => 'sometimes|required|string|max:100',
+            'color' => 'sometimes|nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'is_done' => 'sometimes|boolean',
         ]);
 
@@ -86,6 +88,7 @@ class ProjectStatusController extends Controller
         }
 
         $status->delete();
+
         return response()->json(null, 204);
     }
 
@@ -94,8 +97,8 @@ class ProjectStatusController extends Controller
         $this->gate($workspace, ['owner', 'admin']);
 
         $request->validate([
-            'statuses'            => 'required|array',
-            'statuses.*.id'       => 'required|string',
+            'statuses' => 'required|array',
+            'statuses.*.id' => 'required|string',
             'statuses.*.position' => 'required|integer|min:1',
         ]);
 

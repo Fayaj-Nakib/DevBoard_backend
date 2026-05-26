@@ -13,7 +13,7 @@ class LabelController extends Controller
 {
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
     {
-        abort_if(!in_array($workspace->userRole(auth()->user()), $roles), 403);
+        abort_if(! in_array($workspace->userRole(auth()->user()), $roles), 403);
     }
 
     public function index(Workspace $workspace): JsonResponse
@@ -30,15 +30,15 @@ class LabelController extends Controller
         $this->gate($workspace, ['owner', 'admin']);
 
         $request->validate([
-            'name'  => 'required|string|max:50',
+            'name' => 'required|string|max:50',
             'color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
         ]);
 
         $label = Label::create([
             'workspace_id' => $workspace->id,
-            'created_by'   => $request->user()->id,
-            'name'         => $request->name,
-            'color'        => $request->color ?? '#6B7280',
+            'created_by' => $request->user()->id,
+            'name' => $request->name,
+            'color' => $request->color ?? '#6B7280',
         ]);
 
         return response()->json($label, 201);
@@ -50,7 +50,7 @@ class LabelController extends Controller
         abort_if($label->workspace_id !== $workspace->id, 404);
 
         $request->validate([
-            'name'  => 'sometimes|string|max:50',
+            'name' => 'sometimes|string|max:50',
             'color' => 'sometimes|string|regex:/^#[0-9A-Fa-f]{6}$/',
         ]);
 

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Task;
-use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,17 +17,17 @@ class TaskDependencyController extends Controller
         ]);
 
         return response()->json([
-            'blocked_by' => $task->blockedBy->map(fn($t) => [
-                'id'     => $t->id,
-                'title'  => $t->title,
+            'blocked_by' => $task->blockedBy->map(fn ($t) => [
+                'id' => $t->id,
+                'title' => $t->title,
                 'status' => $t->status,
-                'type'   => $t->pivot->type,
+                'type' => $t->pivot->type,
             ]),
-            'blocking' => $task->blocking->map(fn($t) => [
-                'id'     => $t->id,
-                'title'  => $t->title,
+            'blocking' => $task->blocking->map(fn ($t) => [
+                'id' => $t->id,
+                'title' => $t->title,
                 'status' => $t->status,
-                'type'   => $t->pivot->type,
+                'type' => $t->pivot->type,
             ]),
         ]);
     }
@@ -36,8 +35,8 @@ class TaskDependencyController extends Controller
     public function store(Request $request, Task $task): JsonResponse
     {
         $data = $request->validate([
-            'depends_on_id' => 'required|string|exists:tasks,id|different:' . $task->id,
-            'type'          => 'required|in:blocks,is_blocked_by,relates_to,duplicates',
+            'depends_on_id' => 'required|string|exists:tasks,id|different:'.$task->id,
+            'type' => 'required|in:blocks,is_blocked_by,relates_to,duplicates',
         ]);
 
         // Prevent duplicate

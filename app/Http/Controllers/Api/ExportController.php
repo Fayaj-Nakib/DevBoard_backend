@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -14,9 +15,9 @@ class ExportController extends Controller
 {
     private function gate(Workspace $workspace): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
+        abort_if(! in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
     }
 
     public function export(Request $request, Workspace $workspace, Project $project): StreamedResponse|Response
@@ -25,7 +26,7 @@ class ExportController extends Controller
         abort_if($project->workspace_id !== $workspace->id, 404);
 
         $format = $request->query('format', 'json');
-        abort_if(!in_array($format, ['json', 'csv']), 422);
+        abort_if(! in_array($format, ['json', 'csv']), 422);
 
         if ($format === 'json') {
             return $this->exportJson($project);
@@ -36,20 +37,20 @@ class ExportController extends Controller
 
     private function exportJson(Project $project): StreamedResponse
     {
-        $filename = 'project-' . $project->id . '-export.json';
+        $filename = 'project-'.$project->id.'-export.json';
 
         return response()->streamDownload(function () use ($project) {
             $out = fopen('php://output', 'w');
 
             fwrite($out, json_encode([
-                'project'   => $project->only('id', 'name', 'description', 'status'),
-                'statuses'  => $project->statuses()->get(['id', 'name', 'color', 'position', 'is_default', 'is_done', 'slug']),
+                'project' => $project->only('id', 'name', 'description', 'status'),
+                'statuses' => $project->statuses()->get(['id', 'name', 'color', 'position', 'is_default', 'is_done', 'slug']),
                 'milestones' => $project->milestones()->get(['id', 'name', 'description', 'due_date', 'status']),
-                'sprints'   => $project->sprints()->get(['id', 'name', 'goal', 'start_date', 'end_date', 'status']),
-                'tasks'     => $project->tasks()
+                'sprints' => $project->sprints()->get(['id', 'name', 'goal', 'start_date', 'end_date', 'status']),
+                'tasks' => $project->tasks()
                     ->with(['assignees:id,name,email', 'labels:id,name,color', 'comments.user:id,name', 'customFieldValues.definition'])
                     ->cursor()
-                    ->map(fn($t) => array_merge($t->toArray(), [
+                    ->map(fn ($t) => array_merge($t->toArray(), [
                         'total_logged_minutes' => $t->total_logged_minutes,
                     ]))
                     ->values()
@@ -65,7 +66,7 @@ class ExportController extends Controller
 
     private function exportCsv(Project $project): StreamedResponse
     {
-        $filename = 'project-' . $project->id . '-export.csv';
+        $filename = 'project-'.$project->id.'-export.csv';
         $fieldDefs = $project->customFieldDefinitions()->get()->keyBy('id');
 
         return response()->streamDownload(function () use ($project, $fieldDefs) {

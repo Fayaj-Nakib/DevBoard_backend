@@ -9,13 +9,14 @@ use Illuminate\Console\Command;
 class CheckDueDateAutomationsCommand extends Command
 {
     protected $signature = 'automations:check-due-dates';
+
     protected $description = 'Evaluate due_date_reached automation triggers for tasks due today';
 
     public function handle(): int
     {
         $tasks = Task::query()
             ->whereDate('due_date', today())
-            ->whereHas('project.automationRules', fn($q) => $q
+            ->whereHas('project.automationRules', fn ($q) => $q
                 ->where('is_active', true)
                 ->where('trigger_type', 'due_date_reached')
             )

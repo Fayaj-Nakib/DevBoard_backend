@@ -17,8 +17,8 @@ class ProjectStatus extends Model
 
     protected $casts = [
         'is_default' => 'boolean',
-        'is_done'    => 'boolean',
-        'position'   => 'integer',
+        'is_done' => 'boolean',
+        'position' => 'integer',
     ];
 
     public function project(): BelongsTo

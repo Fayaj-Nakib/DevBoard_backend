@@ -27,14 +27,14 @@ class WorkspaceController extends Controller
         $request->validate(['name' => 'required|string|max:255']);
 
         $workspace = Workspace::create([
-            'name'     => $request->name,
+            'name' => $request->name,
             'owner_id' => $request->user()->id,
         ]);
 
         WorkspaceMember::create([
             'workspace_id' => $workspace->id,
-            'user_id'      => $request->user()->id,
-            'role'         => 'owner',
+            'user_id' => $request->user()->id,
+            'role' => 'owner',
         ]);
 
         return response()->json($workspace->load('members'), 201);
@@ -43,6 +43,7 @@ class WorkspaceController extends Controller
     public function show(Workspace $workspace): JsonResponse
     {
         $this->gate($workspace);
+
         return response()->json($workspace->load(['members.user', 'projects']));
     }
 
@@ -51,6 +52,7 @@ class WorkspaceController extends Controller
         $this->gate($workspace, ['owner', 'admin']);
         $request->validate(['name' => 'required|string|max:255']);
         $workspace->update(['name' => $request->name]);
+
         return response()->json($workspace);
     }
 
@@ -59,6 +61,7 @@ class WorkspaceController extends Controller
         $this->gate($workspace, ['owner', 'admin']);
         $request->validate(['require_2fa' => 'required|boolean']);
         $workspace->update(['require_2fa' => $request->require_2fa]);
+
         return response()->json(['require_2fa' => $workspace->require_2fa]);
     }
 
@@ -66,6 +69,7 @@ class WorkspaceController extends Controller
     {
         $this->gate($workspace, ['owner']);
         $workspace->delete();
+
         return response()->json(null, 204);
     }
 
@@ -74,7 +78,7 @@ class WorkspaceController extends Controller
         $this->gate($workspace, ['owner', 'admin']);
         $request->validate([
             'email' => 'required|email|exists:users,email',
-            'role'  => 'required|in:admin,member,guest',
+            'role' => 'required|in:admin,member,guest',
         ]);
 
         $user = User::where('email', $request->email)->firstOrFail();
@@ -91,12 +95,13 @@ class WorkspaceController extends Controller
     {
         $this->gate($workspace);
         $members = $workspace->members()->with('user:id,name,email')->get()
-            ->map(fn($m) => [
-                'id'    => $m->user->id,
-                'name'  => $m->user->name,
+            ->map(fn ($m) => [
+                'id' => $m->user->id,
+                'name' => $m->user->name,
                 'email' => $m->user->email,
-                'role'  => $m->role,
+                'role' => $m->role,
             ]);
+
         return response()->json($members);
     }
 
@@ -113,11 +118,11 @@ class WorkspaceController extends Controller
 
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
-        abort_if(!in_array($workspace->userRole($user), $roles), 403, 'Forbidden.');
+        abort_if(! in_array($workspace->userRole($user), $roles), 403, 'Forbidden.');
 
-        if ($workspace->require_2fa && !$user->two_factor_confirmed_at) {
+        if ($workspace->require_2fa && ! $user->two_factor_confirmed_at) {
             abort(response()->json(['message' => '2fa_required'], 403));
         }
     }

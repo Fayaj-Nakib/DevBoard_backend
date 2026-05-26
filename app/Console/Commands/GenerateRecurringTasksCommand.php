@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 class GenerateRecurringTasksCommand extends Command
 {
     protected $signature = 'recurring-tasks:generate';
+
     protected $description = 'Create next instances for all due recurring tasks';
 
     public function handle(): int
@@ -21,7 +22,7 @@ class GenerateRecurringTasksCommand extends Command
             ->whereNull('recurrence_parent_id')
             ->where(function ($q) {
                 $q->whereNull('recurrence_ends_at')
-                  ->orWhere('recurrence_ends_at', '>=', today());
+                    ->orWhere('recurrence_ends_at', '>=', today());
             })
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<=', today())
@@ -32,7 +33,7 @@ class GenerateRecurringTasksCommand extends Command
 
         foreach ($tasks as $task) {
             $nextDue = $this->nextDueDate($task->recurrence_rule, $task->due_date);
-            if (!$nextDue) {
+            if (! $nextDue) {
                 continue;
             }
 
@@ -48,17 +49,17 @@ class GenerateRecurringTasksCommand extends Command
 
             // Create the instance for the current due date
             $instance = Task::create([
-                'project_id'           => $task->project_id,
-                'created_by'           => $task->created_by,
-                'title'                => $task->title,
-                'description'          => $task->description,
-                'priority'             => $task->priority,
-                'status'               => 'todo',
-                'position'             => $position,
-                'due_date'             => $task->due_date,
-                'milestone_id'         => $task->milestone_id,
-                'sprint_id'            => $task->sprint_id,
-                'estimate'             => $task->estimate,
+                'project_id' => $task->project_id,
+                'created_by' => $task->created_by,
+                'title' => $task->title,
+                'description' => $task->description,
+                'priority' => $task->priority,
+                'status' => 'todo',
+                'position' => $position,
+                'due_date' => $task->due_date,
+                'milestone_id' => $task->milestone_id,
+                'sprint_id' => $task->sprint_id,
+                'estimate' => $task->estimate,
                 'recurrence_parent_id' => $task->id,
             ]);
 
@@ -69,18 +70,18 @@ class GenerateRecurringTasksCommand extends Command
             $task->update(['due_date' => $nextDue]);
 
             DB::table('activity_logs')->insert([
-                'id'           => (string) Str::uuid(),
+                'id' => (string) Str::uuid(),
                 'workspace_id' => $task->project->workspace_id,
-                'user_id'      => $task->created_by,
+                'user_id' => $task->created_by,
                 'subject_type' => 'task',
-                'subject_id'   => $instance->id,
-                'action'       => 'recurring_task_created',
-                'payload'      => json_encode([
+                'subject_id' => $instance->id,
+                'action' => 'recurring_task_created',
+                'payload' => json_encode([
                     'parent_task_id' => $task->id,
-                    'parent_title'   => $task->title,
-                    'due_date'       => $instance->due_date?->toDateString(),
+                    'parent_title' => $task->title,
+                    'due_date' => $instance->due_date?->toDateString(),
                 ]),
-                'created_at'   => now(),
+                'created_at' => now(),
             ]);
 
             $count++;
@@ -96,11 +97,11 @@ class GenerateRecurringTasksCommand extends Command
         $base = Carbon::parse($currentDue);
 
         return match ($rule) {
-            'daily'   => $base->addDay(),
-            'weekly'  => $base->addWeek(),
+            'daily' => $base->addDay(),
+            'weekly' => $base->addWeek(),
             'weekday' => $this->nextWeekday($base),
             'monthly' => $base->addMonth(),
-            default   => null,
+            default => null,
         };
     }
 
@@ -110,6 +111,7 @@ class GenerateRecurringTasksCommand extends Command
         while ($next->isWeekend()) {
             $next->addDay();
         }
+
         return $next;
     }
 }

@@ -15,27 +15,30 @@ class TaskTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Workspace $workspace;
+
     private Project $project;
+
     private string $base;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->user      = User::factory()->create();
+        $this->user = User::factory()->create();
         $this->workspace = Workspace::factory()->create(['owner_id' => $this->user->id]);
 
         // The gate() checks workspace membership, so we must add the user as owner.
         WorkspaceMember::create([
             'workspace_id' => $this->workspace->id,
-            'user_id'      => $this->user->id,
-            'role'         => 'owner',
+            'user_id' => $this->user->id,
+            'role' => 'owner',
         ]);
 
         $this->project = Project::factory()->create([
             'workspace_id' => $this->workspace->id,
-            'created_by'   => $this->user->id,
+            'created_by' => $this->user->id,
         ]);
 
         $this->base = "/api/workspaces/{$this->workspace->id}/projects/{$this->project->id}/tasks";
@@ -48,12 +51,12 @@ class TaskTest extends TestCase
         Task::factory()->count(2)->create([
             'project_id' => $this->project->id,
             'created_by' => $this->user->id,
-            'status'     => 'todo',
+            'status' => 'todo',
         ]);
         Task::factory()->create([
             'project_id' => $this->project->id,
             'created_by' => $this->user->id,
-            'status'     => 'in_progress',
+            'status' => 'in_progress',
         ]);
 
         $this->actingAs($this->user)
@@ -83,7 +86,7 @@ class TaskTest extends TestCase
     {
         $response = $this->actingAs($this->user)
             ->postJson($this->base, [
-                'title'    => 'Build login page',
+                'title' => 'Build login page',
                 'priority' => 'high',
             ]);
 
@@ -93,7 +96,7 @@ class TaskTest extends TestCase
             ->assertJsonPath('status', 'todo');
 
         $this->assertDatabaseHas('tasks', [
-            'title'      => 'Build login page',
+            'title' => 'Build login page',
             'project_id' => $this->project->id,
         ]);
     }
@@ -121,7 +124,7 @@ class TaskTest extends TestCase
         // Queue is set to 'sync' in phpunit.xml so the job runs inline.
         $this->actingAs($this->user)
             ->postJson($this->base, [
-                'title'       => 'Assigned task',
+                'title' => 'Assigned task',
                 'assignee_id' => $assignee->id,
             ])
             ->assertStatus(201);
@@ -155,30 +158,30 @@ class TaskTest extends TestCase
         $task = Task::factory()->create([
             'project_id' => $this->project->id,
             'created_by' => $this->user->id,
-            'status'     => 'todo',
+            'status' => 'todo',
         ]);
 
         $this->actingAs($this->user)
             ->patchJson("{$this->base}/{$task->id}", [
                 'status' => 'in_progress',
-                'title'  => 'Updated title',
+                'title' => 'Updated title',
             ])
             ->assertOk()
             ->assertJsonPath('status', 'in_progress')
             ->assertJsonPath('title', 'Updated title');
 
         $this->assertDatabaseHas('tasks', [
-            'id'     => $task->id,
+            'id' => $task->id,
             'status' => 'in_progress',
-            'title'  => 'Updated title',
+            'title' => 'Updated title',
         ]);
     }
 
     public function test_updating_assignee_dispatches_notification(): void
     {
-        $task     = Task::factory()->create([
-            'project_id'  => $this->project->id,
-            'created_by'  => $this->user->id,
+        $task = Task::factory()->create([
+            'project_id' => $this->project->id,
+            'created_by' => $this->user->id,
             'assignee_id' => null,
         ]);
         $assignee = User::factory()->create();
@@ -213,14 +216,14 @@ class TaskTest extends TestCase
         $task1 = Task::factory()->create([
             'project_id' => $this->project->id,
             'created_by' => $this->user->id,
-            'status'     => 'todo',
-            'position'   => 1,
+            'status' => 'todo',
+            'position' => 1,
         ]);
         $task2 = Task::factory()->create([
             'project_id' => $this->project->id,
             'created_by' => $this->user->id,
-            'status'     => 'todo',
-            'position'   => 2,
+            'status' => 'todo',
+            'position' => 2,
         ]);
 
         $reorderUrl = "/api/workspaces/{$this->workspace->id}/projects/{$this->project->id}/tasks/reorder";

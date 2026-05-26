@@ -19,6 +19,7 @@ class CommentController extends Controller
     public function index(Task $task): JsonResponse
     {
         $this->taskGuestCheck($task);
+
         return response()->json(
             $task->comments()->with('user:id,name,email')->get()
         );
@@ -27,7 +28,7 @@ class CommentController extends Controller
     public function store(Request $request, Task $task): JsonResponse
     {
         $workspace = $task->project->workspace;
-        abort_if(!in_array($workspace->userRole($request->user()), ['owner', 'admin', 'member']), 403);
+        abort_if(! in_array($workspace->userRole($request->user()), ['owner', 'admin', 'member']), 403);
         $request->validate(['body' => 'required|string']);
 
         /** @var User $author */
@@ -36,7 +37,7 @@ class CommentController extends Controller
         $comment = Comment::create([
             'task_id' => $task->id,
             'user_id' => $author->id,
-            'body'    => $request->body,
+            'body' => $request->body,
         ]);
 
         $comment->load('user', 'task.project');
@@ -60,8 +61,8 @@ class CommentController extends Controller
             'comment.created',
             [
                 'comment_id' => $comment->id,
-                'task_id'    => $task->id,
-                'author_id'  => $author->id,
+                'task_id' => $task->id,
+                'author_id' => $author->id,
             ]
         );
 
@@ -75,6 +76,7 @@ class CommentController extends Controller
         abort_if($comment->task_id !== $task->id, 404);
         abort_if($comment->user_id !== $request->user()->id, 403);
         $comment->delete();
+
         return response()->json(null, 204);
     }
 
@@ -96,7 +98,7 @@ class CommentController extends Controller
             ->where('id', '!=', $authorId)
             ->where(function ($q) use ($matches) {
                 foreach ($matches[1] as $name) {
-                    $q->orWhere('name', 'like', trim($name) . '%');
+                    $q->orWhere('name', 'like', trim($name).'%');
                 }
             })
             ->get();
@@ -106,4 +108,3 @@ class CommentController extends Controller
         }
     }
 }
-

@@ -24,7 +24,7 @@ class Sprint extends Model
 
     protected $casts = [
         'start_date' => 'date',
-        'end_date'   => 'date',
+        'end_date' => 'date',
     ];
 
     public function project(): BelongsTo
@@ -57,6 +57,7 @@ class Sprint extends Model
             return 0;
         }
         $done = $this->tasks()->where('status', 'done')->count();
+
         return (int) round($done / $total * 100);
     }
 }

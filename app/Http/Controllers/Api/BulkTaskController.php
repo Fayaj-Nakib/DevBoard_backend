@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,9 +17,9 @@ class BulkTaskController extends Controller
 {
     private function gate(Workspace $workspace): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
+        abort_if(! in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
     }
 
     public function __invoke(Request $request, Workspace $workspace, Project $project): JsonResponse
@@ -26,13 +27,13 @@ class BulkTaskController extends Controller
         $this->gate($workspace);
 
         $request->validate([
-            'task_ids'        => 'required|array|min:1',
-            'task_ids.*'      => 'required|string|exists:tasks,id',
-            'action'          => 'required|in:move_status,assign,add_label,remove_label,set_milestone,delete',
-            'payload'         => 'sometimes|array',
-            'payload.status'       => 'required_if:action,move_status|in:todo,in_progress,in_review,done',
-            'payload.user_id'      => 'required_if:action,assign|string|exists:users,id',
-            'payload.label_id'     => 'required_if:action,add_label|required_if:action,remove_label|string|exists:labels,id',
+            'task_ids' => 'required|array|min:1',
+            'task_ids.*' => 'required|string|exists:tasks,id',
+            'action' => 'required|in:move_status,assign,add_label,remove_label,set_milestone,delete',
+            'payload' => 'sometimes|array',
+            'payload.status' => 'required_if:action,move_status|in:todo,in_progress,in_review,done',
+            'payload.user_id' => 'required_if:action,assign|string|exists:users,id',
+            'payload.label_id' => 'required_if:action,add_label|required_if:action,remove_label|string|exists:labels,id',
             'payload.milestone_id' => 'nullable|string|exists:milestones,id',
         ]);
 
@@ -42,8 +43,8 @@ class BulkTaskController extends Controller
             ->get();
 
         $updated = 0;
-        $failed  = 0;
-        $actor   = $request->user();
+        $failed = 0;
+        $actor = $request->user();
         $payload = $request->payload ?? [];
 
         foreach ($tasks as $task) {
@@ -61,24 +62,24 @@ class BulkTaskController extends Controller
     private function applyAction(Task $task, string $action, array $payload, $actor, Workspace $workspace): void
     {
         match ($action) {
-            'move_status'   => $task->update(['status' => $payload['status']]),
-            'assign'        => $task->assignees()->syncWithoutDetaching([$payload['user_id']]),
-            'add_label'     => $task->labels()->syncWithoutDetaching([$payload['label_id']]),
-            'remove_label'  => $task->labels()->detach($payload['label_id']),
+            'move_status' => $task->update(['status' => $payload['status']]),
+            'assign' => $task->assignees()->syncWithoutDetaching([$payload['user_id']]),
+            'add_label' => $task->labels()->syncWithoutDetaching([$payload['label_id']]),
+            'remove_label' => $task->labels()->detach($payload['label_id']),
             'set_milestone' => $task->update(['milestone_id' => $payload['milestone_id'] ?? null]),
-            'delete'        => $task->delete(),
+            'delete' => $task->delete(),
         };
 
         if ($action !== 'delete') {
             DB::table('activity_logs')->insert([
-                'id'           => (string) Str::uuid(),
+                'id' => (string) Str::uuid(),
                 'workspace_id' => $workspace->id,
-                'user_id'      => $actor->id,
+                'user_id' => $actor->id,
                 'subject_type' => 'task',
-                'subject_id'   => $task->id,
-                'action'       => 'bulk_' . $action,
-                'payload'      => json_encode($payload),
-                'created_at'   => now(),
+                'subject_id' => $task->id,
+                'action' => 'bulk_'.$action,
+                'payload' => json_encode($payload),
+                'created_at' => now(),
             ]);
         }
     }

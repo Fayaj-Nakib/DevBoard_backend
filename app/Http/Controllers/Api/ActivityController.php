@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,9 +16,9 @@ class ActivityController extends Controller
 {
     private function gate(Workspace $workspace): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
+        abort_if(! in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
     }
 
     public function forTask(Request $request, Task $task): JsonResponse
@@ -46,8 +47,8 @@ class ActivityController extends Controller
         $this->projectGate($workspace, $project);
 
         $request->validate([
-            'actor_id'    => 'nullable|string|exists:users,id',
-            'action'      => 'nullable|string|max:100',
+            'actor_id' => 'nullable|string|exists:users,id',
+            'action' => 'nullable|string|max:100',
         ]);
 
         $taskIds = $project->tasks()->pluck('id');
@@ -57,10 +58,10 @@ class ActivityController extends Controller
             ->where(function ($q) use ($project, $taskIds) {
                 $q->where(function ($inner) use ($taskIds) {
                     $inner->where('activity_logs.subject_type', 'task')
-                          ->whereIn('activity_logs.subject_id', $taskIds);
+                        ->whereIn('activity_logs.subject_id', $taskIds);
                 })->orWhere(function ($inner) use ($project) {
                     $inner->where('activity_logs.subject_type', 'project')
-                          ->where('activity_logs.subject_id', $project->id);
+                        ->where('activity_logs.subject_id', $project->id);
                 });
             })
             ->orderByDesc('activity_logs.created_at');
@@ -92,7 +93,7 @@ class ActivityController extends Controller
 
         $request->validate([
             'actor_id' => 'nullable|string|exists:users,id',
-            'action'   => 'nullable|string|max:100',
+            'action' => 'nullable|string|max:100',
         ]);
 
         $query = DB::table('activity_logs')
@@ -125,22 +126,23 @@ class ActivityController extends Controller
     {
         $items = collect($page->items())->map(function ($row) {
             $payload = is_string($row->payload) ? json_decode($row->payload, true) : (array) ($row->payload ?? []);
+
             return [
-                'id'           => $row->id,
-                'action'       => $row->action,
+                'id' => $row->id,
+                'action' => $row->action,
                 'subject_type' => $row->subject_type ?? null,
-                'subject_id'   => $row->subject_id ?? null,
-                'payload'      => $payload,
-                'created_at'   => $row->created_at,
-                'actor'        => $row->actor_id ? ['id' => $row->actor_id, 'name' => $row->actor_name] : null,
+                'subject_id' => $row->subject_id ?? null,
+                'payload' => $payload,
+                'created_at' => $row->created_at,
+                'actor' => $row->actor_id ? ['id' => $row->actor_id, 'name' => $row->actor_name] : null,
             ];
         });
 
         return [
-            'data'         => $items,
+            'data' => $items,
             'current_page' => $page->currentPage(),
-            'last_page'    => $page->lastPage(),
-            'total'        => $page->total(),
+            'last_page' => $page->lastPage(),
+            'total' => $page->total(),
         ];
     }
 }

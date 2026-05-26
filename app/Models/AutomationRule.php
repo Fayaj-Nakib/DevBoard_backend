@@ -18,9 +18,9 @@ class AutomationRule extends Model
     ];
 
     protected $casts = [
-        'is_active'      => 'boolean',
+        'is_active' => 'boolean',
         'trigger_config' => 'array',
-        'action_config'  => 'array',
+        'action_config' => 'array',
     ];
 
     public function project(): BelongsTo

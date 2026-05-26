@@ -18,7 +18,8 @@ class SendTaskAssignedNotification implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries  = 3;
+    public int $tries = 3;
+
     public int $backoff = 60;
 
     public function __construct(public Task $task, public User $assignee) {}
@@ -28,12 +29,12 @@ class SendTaskAssignedNotification implements ShouldQueue
         Mail::to($this->assignee->email)->send(new TaskAssignedMail($this->task));
 
         $notification = Notification::create([
-            'user_id'    => $this->assignee->id,
-            'type'       => 'TaskAssigned',
-            'data'       => [
-                'task_id'     => $this->task->id,
-                'task_title'  => $this->task->title,
-                'project'     => $this->task->project->name,
+            'user_id' => $this->assignee->id,
+            'type' => 'TaskAssigned',
+            'data' => [
+                'task_id' => $this->task->id,
+                'task_title' => $this->task->title,
+                'project' => $this->task->project->name,
                 'assigned_by' => $this->task->creator->name,
             ],
             'created_at' => now(),

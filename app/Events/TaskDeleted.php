@@ -33,9 +33,9 @@ class TaskDeleted implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'task_id'    => $this->taskId,
+            'task_id' => $this->taskId,
             'project_id' => $this->projectId,
-            'status'     => $this->status,
+            'status' => $this->status,
         ];
     }
 }

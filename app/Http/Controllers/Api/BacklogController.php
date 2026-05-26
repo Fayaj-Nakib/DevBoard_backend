@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,9 +16,9 @@ class BacklogController extends Controller
 {
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), $roles), 403);
+        abort_if(! in_array($workspace->userRole($user), $roles), 403);
     }
 
     public function index(Workspace $workspace, Project $project): JsonResponse
@@ -40,7 +41,7 @@ class BacklogController extends Controller
         $this->gate($workspace, ['owner', 'admin', 'member']);
         abort_if($task->project_id !== $project->id, 404);
 
-        $task->update(['is_backlog' => !$task->is_backlog]);
+        $task->update(['is_backlog' => ! $task->is_backlog]);
 
         if ($task->is_backlog && $task->backlog_position === null) {
             $max = $project->tasks()->where('is_backlog', true)->max('backlog_position') ?? 0;
@@ -55,8 +56,8 @@ class BacklogController extends Controller
         $this->gate($workspace, ['owner', 'admin', 'member']);
 
         $request->validate([
-            'tasks'            => 'required|array',
-            'tasks.*.id'       => 'required|string',
+            'tasks' => 'required|array',
+            'tasks.*.id' => 'required|string',
             'tasks.*.position' => 'required|integer|min:1',
         ]);
 

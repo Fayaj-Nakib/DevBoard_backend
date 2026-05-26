@@ -34,10 +34,10 @@ class CommentCreated implements ShouldBroadcast
     {
         return [
             'comment' => [
-                'id'         => $this->comment->id,
-                'task_id'    => $this->comment->task_id,
-                'body'       => $this->comment->body,
-                'user'       => $this->comment->user,
+                'id' => $this->comment->id,
+                'task_id' => $this->comment->task_id,
+                'body' => $this->comment->body,
+                'user' => $this->comment->user,
                 'created_at' => $this->comment->created_at,
             ],
         ];

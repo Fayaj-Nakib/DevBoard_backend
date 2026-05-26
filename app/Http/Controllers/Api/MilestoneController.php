@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Milestone;
 use App\Models\Project;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,9 +15,9 @@ class MilestoneController extends Controller
 {
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), $roles), 403);
+        abort_if(! in_array($workspace->userRole($user), $roles), 403);
     }
 
     public function index(Workspace $workspace, Project $project): JsonResponse
@@ -36,17 +37,17 @@ class MilestoneController extends Controller
         $this->gate($workspace, ['owner', 'admin']);
 
         $request->validate([
-            'name'        => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'due_date'    => 'nullable|date',
+            'due_date' => 'nullable|date',
         ]);
 
         $milestone = Milestone::create([
-            'project_id'  => $project->id,
-            'created_by'  => $request->user()->id,
-            'name'        => $request->name,
+            'project_id' => $project->id,
+            'created_by' => $request->user()->id,
+            'name' => $request->name,
             'description' => $request->description,
-            'due_date'    => $request->due_date,
+            'due_date' => $request->due_date,
         ]);
 
         return response()->json($milestone, 201);
@@ -59,7 +60,7 @@ class MilestoneController extends Controller
 
         return response()->json(
             $milestone->load(['tasks' => fn ($q) => $q->with('assignees')->orderBy('position')])
-                       ->append('progress')
+                ->append('progress')
         );
     }
 
@@ -69,10 +70,10 @@ class MilestoneController extends Controller
         abort_if($milestone->project_id !== $project->id, 404);
 
         $request->validate([
-            'name'        => 'sometimes|string|max:255',
+            'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'due_date'    => 'nullable|date',
-            'status'      => 'sometimes|in:open,closed',
+            'due_date' => 'nullable|date',
+            'status' => 'sometimes|in:open,closed',
         ]);
 
         $milestone->update($request->only('name', 'description', 'due_date', 'status'));

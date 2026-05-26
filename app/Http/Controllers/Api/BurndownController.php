@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Sprint;
+use App\Models\User;
 use App\Models\Workspace;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -16,9 +17,9 @@ class BurndownController extends Controller
 {
     private function gate(Workspace $workspace): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
+        abort_if(! in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
     }
 
     public function show(Workspace $workspace, Project $project, Sprint $sprint): JsonResponse
@@ -34,22 +35,22 @@ class BurndownController extends Controller
 
         $totalPoints = (int) $tasks->sum('estimate');
 
-        if (!$sprint->start_date || !$sprint->end_date) {
+        if (! $sprint->start_date || ! $sprint->end_date) {
             return response()->json([
-                'sprint'       => [
-                    'id'           => $sprint->id,
-                    'name'         => $sprint->name,
-                    'start_date'   => null,
-                    'end_date'     => null,
+                'sprint' => [
+                    'id' => $sprint->id,
+                    'name' => $sprint->name,
+                    'start_date' => null,
+                    'end_date' => null,
                     'total_points' => $totalPoints,
                 ],
                 'daily' => [],
             ]);
         }
 
-        $start   = $sprint->start_date->copy()->startOfDay();
-        $end     = $sprint->end_date->copy()->endOfDay();
-        $today   = now()->startOfDay();
+        $start = $sprint->start_date->copy()->startOfDay();
+        $end = $sprint->end_date->copy()->endOfDay();
+        $today = now()->startOfDay();
         $plotEnd = $end->lt($today) ? $end : (Carbon::min($end, $today));
 
         // Get done dates per task from status history
@@ -57,7 +58,7 @@ class BurndownController extends Controller
         $taskIds = $tasks->pluck('id')->all();
         $doneDates = collect();
 
-        if (!empty($taskIds)) {
+        if (! empty($taskIds)) {
             // Get done project_status ids for this project
             $doneStatusIds = DB::table('project_statuses')
                 ->where('project_id', $project->id)
@@ -65,7 +66,7 @@ class BurndownController extends Controller
                 ->pluck('id')
                 ->all();
 
-            if (!empty($doneStatusIds)) {
+            if (! empty($doneStatusIds)) {
                 $doneDates = DB::table('task_status_history')
                     ->whereIn('task_id', $taskIds)
                     ->whereIn('to_status_id', $doneStatusIds)
@@ -78,12 +79,12 @@ class BurndownController extends Controller
         }
 
         // Build task estimate map
-        $estimateMap = $tasks->keyBy('id')->map(fn($t) => (int) $t->estimate);
+        $estimateMap = $tasks->keyBy('id')->map(fn ($t) => (int) $t->estimate);
 
         // Generate daily data
-        $period   = CarbonPeriod::create($start, $plotEnd);
+        $period = CarbonPeriod::create($start, $plotEnd);
         $totalDays = max(1, $start->diffInDays($end));
-        $daily    = [];
+        $daily = [];
 
         foreach ($period as $date) {
             $completedPoints = 0;
@@ -94,22 +95,22 @@ class BurndownController extends Controller
                 }
             }
 
-            $dayIndex    = $start->diffInDays($date);
+            $dayIndex = $start->diffInDays($date);
             $idealPoints = round($totalPoints * (1 - $dayIndex / $totalDays));
 
             $daily[] = [
-                'date'             => $date->toDateString(),
+                'date' => $date->toDateString(),
                 'remaining_points' => max(0, $totalPoints - $completedPoints),
-                'ideal_points'     => max(0, (int) $idealPoints),
+                'ideal_points' => max(0, (int) $idealPoints),
             ];
         }
 
         return response()->json([
             'sprint' => [
-                'id'           => $sprint->id,
-                'name'         => $sprint->name,
-                'start_date'   => $sprint->start_date->toDateString(),
-                'end_date'     => $sprint->end_date->toDateString(),
+                'id' => $sprint->id,
+                'name' => $sprint->name,
+                'start_date' => $sprint->start_date->toDateString(),
+                'end_date' => $sprint->end_date->toDateString(),
                 'total_points' => $totalPoints,
             ],
             'daily' => $daily,

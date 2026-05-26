@@ -14,13 +14,14 @@ class EvaluateAutomationRules implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries  = 3;
+    public int $tries = 3;
+
     public int $backoff = 30;
 
     public function __construct(
-        public Task   $task,
+        public Task $task,
         public string $triggerType,
-        public array  $triggerContext = [], // e.g. from_status_id, to_status_id, user_id
+        public array $triggerContext = [], // e.g. from_status_id, to_status_id, user_id
         public ?string $actorUserId = null,
     ) {}
 
@@ -44,27 +45,28 @@ class EvaluateAutomationRules implements ShouldQueue
         $config = $rule->trigger_config ?? [];
 
         return match ($this->triggerType) {
-            'task_created'    => true,
-            'comment_added'   => true,
-            'assignee_added'  => empty($config['user_id'])
+            'task_created' => true,
+            'comment_added' => true,
+            'assignee_added' => empty($config['user_id'])
                 || ($this->triggerContext['user_id'] ?? null) === $config['user_id'],
-            'status_changed'  => $this->matchesStatusTrigger($config),
+            'status_changed' => $this->matchesStatusTrigger($config),
             'due_date_reached' => true,
-            default           => false,
+            default => false,
         };
     }
 
     private function matchesStatusTrigger(array $config): bool
     {
         $fromId = $this->triggerContext['from_status_id'] ?? null;
-        $toId   = $this->triggerContext['to_status_id']   ?? null;
+        $toId = $this->triggerContext['to_status_id'] ?? null;
 
-        if (!empty($config['from_status_id']) && $config['from_status_id'] !== $fromId) {
+        if (! empty($config['from_status_id']) && $config['from_status_id'] !== $fromId) {
             return false;
         }
-        if (!empty($config['to_status_id']) && $config['to_status_id'] !== $toId) {
+        if (! empty($config['to_status_id']) && $config['to_status_id'] !== $toId) {
             return false;
         }
+
         return true;
     }
 }

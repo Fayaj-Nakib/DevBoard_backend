@@ -16,8 +16,8 @@ class TaskTimeLog extends Model
     ];
 
     protected $casts = [
-        'started_at'       => 'datetime',
-        'ended_at'         => 'datetime',
+        'started_at' => 'datetime',
+        'ended_at' => 'datetime',
         'duration_minutes' => 'integer',
     ];
 

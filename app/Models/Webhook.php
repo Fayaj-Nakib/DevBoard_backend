@@ -16,7 +16,7 @@ class Webhook extends Model
     ];
 
     protected $casts = [
-        'events'    => 'array',
+        'events' => 'array',
         'is_active' => 'boolean',
     ];
 

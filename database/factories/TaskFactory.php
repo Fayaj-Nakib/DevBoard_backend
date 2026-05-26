@@ -17,15 +17,15 @@ class TaskFactory extends Factory
     public function definition(): array
     {
         return [
-            'project_id'  => Project::factory(),
-            'created_by'  => User::factory(),
+            'project_id' => Project::factory(),
+            'created_by' => User::factory(),
             'assignee_id' => null,
-            'title'       => fake()->sentence(4),
+            'title' => fake()->sentence(4),
             'description' => fake()->optional()->paragraph(),
-            'status'      => fake()->randomElement(['todo', 'in_progress', 'in_review', 'done']),
-            'priority'    => fake()->randomElement(['low', 'medium', 'high']),
-            'position'    => fake()->numberBetween(1, 100),
-            'due_date'    => fake()->optional()->dateTimeBetween('now', '+30 days'),
+            'status' => fake()->randomElement(['todo', 'in_progress', 'in_review', 'done']),
+            'priority' => fake()->randomElement(['low', 'medium', 'high']),
+            'position' => fake()->numberBetween(1, 100),
+            'due_date' => fake()->optional()->dateTimeBetween('now', '+30 days'),
         ];
     }
 }

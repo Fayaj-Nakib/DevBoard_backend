@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\Task;
+use App\Models\User;
 use App\Models\Workspace;
 
 abstract class Controller
@@ -13,10 +14,11 @@ abstract class Controller
     protected function wsGate(
         Workspace $workspace,
         array $roles = ['owner', 'admin', 'member', 'guest'],
-    ): \App\Models\User {
-        /** @var \App\Models\User $user */
+    ): User {
+        /** @var User $user */
         $user = auth()->user();
-        abort_if(!in_array($workspace->userRole($user), $roles), 403);
+        abort_if(! in_array($workspace->userRole($user), $roles), 403);
+
         return $user;
     }
 
@@ -24,7 +26,7 @@ abstract class Controller
      * Workspace gate that also enforces project-level membership for guests.
      * Guests must be an explicit project_member to access a project.
      */
-    protected function projectGate(Workspace $workspace, Project $project): \App\Models\User
+    protected function projectGate(Workspace $workspace, Project $project): User
     {
         $user = $this->wsGate($workspace);
         if ($workspace->userRole($user) === 'guest') {
@@ -35,6 +37,7 @@ abstract class Controller
                 403
             );
         }
+
         return $user;
     }
 
@@ -44,10 +47,10 @@ abstract class Controller
      */
     protected function taskGuestCheck(Task $task): void
     {
-        /** @var \App\Models\User $user */
-        $user      = auth()->user();
+        /** @var User $user */
+        $user = auth()->user();
         $workspace = $task->project->workspace;
-        $wsRole    = $workspace->userRole($user);
+        $wsRole = $workspace->userRole($user);
 
         abort_if($wsRole === null, 403);
 

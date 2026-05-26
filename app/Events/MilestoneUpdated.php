@@ -31,12 +31,12 @@ class MilestoneUpdated implements ShouldBroadcast
     {
         return [
             'milestone' => [
-                'id'         => $this->milestone->id,
+                'id' => $this->milestone->id,
                 'project_id' => $this->milestone->project_id,
-                'name'       => $this->milestone->name,
-                'status'     => $this->milestone->status,
-                'due_date'   => $this->milestone->due_date,
-                'progress'   => $this->milestone->progress,
+                'name' => $this->milestone->name,
+                'status' => $this->milestone->status,
+                'due_date' => $this->milestone->due_date,
+                'progress' => $this->milestone->progress,
             ],
         ];
     }

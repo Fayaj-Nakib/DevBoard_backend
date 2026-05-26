@@ -15,7 +15,7 @@ class DigestMail extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public User       $user,
+        public User $user,
         public Collection $dueTodayTasks,
         public Collection $overdueTasks,
         public Collection $watchedActivityTasks,
@@ -25,7 +25,7 @@ class DigestMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your DevBoard Daily Digest — ' . now()->format('M j, Y'),
+            subject: 'Your DevBoard Daily Digest — '.now()->format('M j, Y'),
         );
     }
 

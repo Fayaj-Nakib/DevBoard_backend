@@ -11,9 +11,11 @@ use App\Jobs\SendTaskAssignedNotification;
 use App\Jobs\SendTaskWatcherNotification;
 use App\Jobs\WebhookDispatchJob;
 use App\Models\Project;
+use App\Models\ProjectStatus;
 use App\Models\Task;
 use App\Models\TaskStatusHistory;
 use App\Models\TaskTemplate;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,9 +27,9 @@ class TaskController extends Controller
 {
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), $roles), 403);
+        abort_if(! in_array($workspace->userRole($user), $roles), 403);
     }
 
     public function index(Request $request, Workspace $workspace, Project $project): JsonResponse
@@ -45,12 +47,12 @@ class TaskController extends Controller
         // ── Filters ─────────────────────────────────────────────────────────
         if ($request->filled('label_ids')) {
             $ids = (array) $request->label_ids;
-            $query->whereHas('labels', fn($q) => $q->whereIn('labels.id', $ids));
+            $query->whereHas('labels', fn ($q) => $q->whereIn('labels.id', $ids));
         }
 
         if ($request->filled('assignee_ids')) {
             $ids = (array) $request->assignee_ids;
-            $query->whereHas('assignees', fn($q) => $q->whereIn('users.id', $ids));
+            $query->whereHas('assignees', fn ($q) => $q->whereIn('users.id', $ids));
         }
 
         if ($request->filled('milestone_id')) {
@@ -75,16 +77,16 @@ class TaskController extends Controller
 
         if ($request->boolean('is_overdue')) {
             $query->whereDate('due_date', '<', today())
-                  ->where('status', '!=', 'done');
+                ->where('status', '!=', 'done');
         }
 
         if ($request->filled('watcher_id')) {
-            $query->whereHas('watchers', fn($q) => $q->where('users.id', $request->watcher_id));
+            $query->whereHas('watchers', fn ($q) => $q->where('users.id', $request->watcher_id));
         }
 
         // ── Sorting ──────────────────────────────────────────────────────────
         $allowedSorts = ['due_date', 'created_at', 'title', 'estimate'];
-        $sortBy  = in_array($request->sort_by, $allowedSorts, true) ? $request->sort_by : null;
+        $sortBy = in_array($request->sort_by, $allowedSorts, true) ? $request->sort_by : null;
         $sortDir = $request->sort_dir === 'desc' ? 'desc' : 'asc';
 
         if ($sortBy) {
@@ -108,20 +110,20 @@ class TaskController extends Controller
         $this->gate($workspace, ['owner', 'admin', 'member']);
 
         $request->validate([
-            'title'             => 'required_without:template_id|string|max:255',
-            'description'       => 'nullable|string',
-            'priority'          => 'in:low,medium,high',
-            'due_date'          => 'nullable|date',
-            'started_at'        => 'nullable|date',
-            'milestone_id'      => 'nullable|string|exists:milestones,id',
-            'sprint_id'         => 'nullable|string|exists:sprints,id',
+            'title' => 'required_without:template_id|string|max:255',
+            'description' => 'nullable|string',
+            'priority' => 'in:low,medium,high',
+            'due_date' => 'nullable|date',
+            'started_at' => 'nullable|date',
+            'milestone_id' => 'nullable|string|exists:milestones,id',
+            'sprint_id' => 'nullable|string|exists:sprints,id',
             'project_status_id' => 'nullable|string|exists:project_statuses,id',
-            'estimate'          => 'nullable|integer|min:0|max:9999',
-            'assignee_ids'      => 'nullable|array',
-            'assignee_ids.*'    => 'string|exists:users,id',
-            'label_ids'         => 'nullable|array',
-            'label_ids.*'       => 'string|exists:labels,id',
-            'template_id'       => 'nullable|string|exists:task_templates,id',
+            'estimate' => 'nullable|integer|min:0|max:9999',
+            'assignee_ids' => 'nullable|array',
+            'assignee_ids.*' => 'string|exists:users,id',
+            'label_ids' => 'nullable|array',
+            'label_ids.*' => 'string|exists:labels,id',
+            'template_id' => 'nullable|string|exists:task_templates,id',
         ]);
 
         // Merge template defaults (request values override template)
@@ -130,20 +132,20 @@ class TaskController extends Controller
             $tpl = TaskTemplate::find($request->template_id);
             if ($tpl && $tpl->project_id === $project->id) {
                 $templateData = [
-                    'title'       => $tpl->default_title ?? 'New Task',
+                    'title' => $tpl->default_title ?? 'New Task',
                     'description' => $tpl->description,
-                    'priority'    => $tpl->priority,
-                    'estimate'    => $tpl->estimate,
-                    'label_ids'   => $tpl->label_ids ?? [],
+                    'priority' => $tpl->priority,
+                    'estimate' => $tpl->estimate,
+                    'label_ids' => $tpl->label_ids ?? [],
                 ];
             }
         }
 
         // Resolve project_status_id and derive status
         $projectStatusId = $request->project_status_id;
-        $statusSlug      = 'todo';
+        $statusSlug = 'todo';
         if ($projectStatusId) {
-            $ps = \App\Models\ProjectStatus::find($projectStatusId);
+            $ps = ProjectStatus::find($projectStatusId);
             if ($ps) {
                 $statusSlug = $ps->slug ?? ($ps->is_done ? 'done' : 'todo');
             }
@@ -153,11 +155,11 @@ class TaskController extends Controller
                 ?? $project->statuses()->orderBy('position')->first();
             if ($defaultPs) {
                 $projectStatusId = $defaultPs->id;
-                $statusSlug      = $defaultPs->slug ?? 'todo';
+                $statusSlug = $defaultPs->slug ?? 'todo';
             }
         }
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
 
         $position = $project->tasks()
@@ -165,19 +167,19 @@ class TaskController extends Controller
             ->max('position') + 1;
 
         $task = Task::create(array_merge($templateData, [
-            'project_id'        => $project->id,
-            'created_by'        => $user->id,
-            'title'             => $request->title ?? ($templateData['title'] ?? 'New Task'),
-            'description'       => $request->description ?? ($templateData['description'] ?? null),
-            'priority'          => $request->priority ?? ($templateData['priority'] ?? 'medium'),
-            'due_date'          => $request->due_date,
-            'started_at'        => $request->started_at,
-            'milestone_id'      => $request->milestone_id,
-            'sprint_id'         => $request->sprint_id,
+            'project_id' => $project->id,
+            'created_by' => $user->id,
+            'title' => $request->title ?? ($templateData['title'] ?? 'New Task'),
+            'description' => $request->description ?? ($templateData['description'] ?? null),
+            'priority' => $request->priority ?? ($templateData['priority'] ?? 'medium'),
+            'due_date' => $request->due_date,
+            'started_at' => $request->started_at,
+            'milestone_id' => $request->milestone_id,
+            'sprint_id' => $request->sprint_id,
             'project_status_id' => $projectStatusId,
-            'estimate'          => $request->estimate ?? ($templateData['estimate'] ?? null),
-            'position'          => $position,
-            'status'            => $statusSlug,
+            'estimate' => $request->estimate ?? ($templateData['estimate'] ?? null),
+            'position' => $position,
+            'status' => $statusSlug,
         ]));
 
         if ($request->filled('assignee_ids')) {
@@ -199,21 +201,21 @@ class TaskController extends Controller
 
         // Activity log
         DB::table('activity_logs')->insert([
-            'id'           => (string) Str::uuid(),
+            'id' => (string) Str::uuid(),
             'workspace_id' => $project->workspace_id,
-            'user_id'      => $user->id,
+            'user_id' => $user->id,
             'subject_type' => 'task',
-            'subject_id'   => $task->id,
-            'action'       => 'task_created',
-            'payload'      => json_encode(['title' => $task->title, 'priority' => $task->priority]),
-            'created_at'   => now(),
+            'subject_id' => $task->id,
+            'action' => 'task_created',
+            'payload' => json_encode(['title' => $task->title, 'priority' => $task->priority]),
+            'created_at' => now(),
         ]);
 
         // Dispatch automation rules + webhook + real-time broadcast
         EvaluateAutomationRules::dispatch($task, 'task_created', [], $user->id);
         WebhookDispatchJob::dispatch($project->workspace_id, 'task.created', [
-            'task_id'    => $task->id,
-            'title'      => $task->title,
+            'task_id' => $task->id,
+            'title' => $task->title,
             'project_id' => $project->id,
             'created_by' => $user->id,
         ]);
@@ -245,14 +247,14 @@ class TaskController extends Controller
         abort_if($task->project_id !== $project->id, 404);
 
         $request->validate([
-            'assignee_ids'      => 'sometimes|nullable|array',
-            'assignee_ids.*'    => 'string|exists:users,id',
-            'label_ids'         => 'sometimes|nullable|array',
-            'label_ids.*'       => 'string|exists:labels,id',
-            'sprint_id'         => 'sometimes|nullable|string|exists:sprints,id',
+            'assignee_ids' => 'sometimes|nullable|array',
+            'assignee_ids.*' => 'string|exists:users,id',
+            'label_ids' => 'sometimes|nullable|array',
+            'label_ids.*' => 'string|exists:labels,id',
+            'sprint_id' => 'sometimes|nullable|string|exists:sprints,id',
             'project_status_id' => 'sometimes|nullable|string|exists:project_statuses,id',
-            'estimate'          => 'sometimes|nullable|integer|min:0|max:9999',
-            'is_backlog'        => 'sometimes|boolean',
+            'estimate' => 'sometimes|nullable|integer|min:0|max:9999',
+            'is_backlog' => 'sometimes|boolean',
         ]);
 
         $oldStatus = $task->status;
@@ -266,7 +268,7 @@ class TaskController extends Controller
         // Sync status from project_status slug when project_status_id changes
         $oldProjectStatusId = $task->project_status_id;
         if ($request->filled('project_status_id')) {
-            $ps = \App\Models\ProjectStatus::find($request->project_status_id);
+            $ps = ProjectStatus::find($request->project_status_id);
             if ($ps) {
                 $slug = $ps->slug ?? ($ps->is_done ? 'done' : 'todo');
                 if (in_array($slug, ['todo', 'in_progress', 'in_review', 'done'])) {
@@ -282,11 +284,11 @@ class TaskController extends Controller
             && $request->project_status_id !== $oldProjectStatusId
         ) {
             TaskStatusHistory::create([
-                'task_id'        => $task->id,
+                'task_id' => $task->id,
                 'from_status_id' => $oldProjectStatusId,
-                'to_status_id'   => $request->project_status_id,
-                'changed_by'     => $request->user()->id,
-                'changed_at'     => now(),
+                'to_status_id' => $request->project_status_id,
+                'changed_by' => $request->user()->id,
+                'changed_at' => now(),
             ]);
         }
 
@@ -297,17 +299,17 @@ class TaskController extends Controller
                 if ($watcher->id !== $actorId) {
                     SendTaskWatcherNotification::dispatch($task, $watcher, 'status_changed', [
                         'from' => $oldStatus,
-                        'to'   => $task->status,
+                        'to' => $task->status,
                     ]);
                 }
             }
         }
 
         if ($request->has('assignee_ids')) {
-            $oldIds  = $task->assignees()->pluck('users.id')->all();
-            $newIds  = $request->assignee_ids ?? [];
+            $oldIds = $task->assignees()->pluck('users.id')->all();
+            $newIds = $request->assignee_ids ?? [];
             $task->assignees()->sync($newIds);
-            $addedIds    = array_diff($newIds, $oldIds);
+            $addedIds = array_diff($newIds, $oldIds);
             $currentUserId = $request->user()->id;
             if ($addedIds) {
                 $task->load('assignees');
@@ -316,14 +318,14 @@ class TaskController extends Controller
                         SendTaskAssignedNotification::dispatch($task, $assignee);
                     }
                     DB::table('activity_logs')->insert([
-                        'id'           => (string) Str::uuid(),
+                        'id' => (string) Str::uuid(),
                         'workspace_id' => $project->workspace_id,
-                        'user_id'      => $currentUserId,
+                        'user_id' => $currentUserId,
                         'subject_type' => 'task',
-                        'subject_id'   => $task->id,
-                        'action'       => 'assignee_added',
-                        'payload'      => json_encode(['new_value' => $assignee->name]),
-                        'created_at'   => now(),
+                        'subject_id' => $task->id,
+                        'action' => 'assignee_added',
+                        'payload' => json_encode(['new_value' => $assignee->name]),
+                        'created_at' => now(),
                     ]);
                     EvaluateAutomationRules::dispatch($task, 'assignee_added', [
                         'user_id' => $assignee->id,
@@ -341,30 +343,30 @@ class TaskController extends Controller
             && $request->project_status_id !== $oldProjectStatusId
         ) {
             DB::table('activity_logs')->insert([
-                'id'           => (string) Str::uuid(),
+                'id' => (string) Str::uuid(),
                 'workspace_id' => $project->workspace_id,
-                'user_id'      => $request->user()->id,
+                'user_id' => $request->user()->id,
                 'subject_type' => 'task',
-                'subject_id'   => $task->id,
-                'action'       => 'status_changed',
-                'payload'      => json_encode([
+                'subject_id' => $task->id,
+                'action' => 'status_changed',
+                'payload' => json_encode([
                     'from_status_id' => $oldProjectStatusId,
-                    'to_status_id'   => $request->project_status_id,
-                    'new_value'      => $task->status,
+                    'to_status_id' => $request->project_status_id,
+                    'new_value' => $task->status,
                 ]),
-                'created_at'   => now(),
+                'created_at' => now(),
             ]);
 
             EvaluateAutomationRules::dispatch($task, 'status_changed', [
                 'from_status_id' => $oldProjectStatusId,
-                'to_status_id'   => $request->project_status_id,
+                'to_status_id' => $request->project_status_id,
             ], $request->user()->id);
 
             WebhookDispatchJob::dispatch($project->workspace_id, 'task.status_changed', [
-                'task_id'        => $task->id,
+                'task_id' => $task->id,
                 'from_status_id' => $oldProjectStatusId,
-                'to_status_id'   => $request->project_status_id,
-                'project_id'     => $project->id,
+                'to_status_id' => $request->project_status_id,
+                'project_id' => $project->id,
             ]);
         }
 
@@ -372,20 +374,20 @@ class TaskController extends Controller
         foreach (['title', 'description'] as $field) {
             if ($request->filled($field)) {
                 DB::table('activity_logs')->insert([
-                    'id'           => (string) Str::uuid(),
+                    'id' => (string) Str::uuid(),
                     'workspace_id' => $project->workspace_id,
-                    'user_id'      => $request->user()->id,
+                    'user_id' => $request->user()->id,
                     'subject_type' => 'task',
-                    'subject_id'   => $task->id,
-                    'action'       => "task_{$field}_updated",
-                    'payload'      => json_encode(['new_value' => $request->$field]),
-                    'created_at'   => now(),
+                    'subject_id' => $task->id,
+                    'action' => "task_{$field}_updated",
+                    'payload' => json_encode(['new_value' => $request->$field]),
+                    'created_at' => now(),
                 ]);
             }
         }
 
         WebhookDispatchJob::dispatch($project->workspace_id, 'task.updated', [
-            'task_id'    => $task->id,
+            'task_id' => $task->id,
             'project_id' => $project->id,
             'updated_by' => $request->user()->id,
         ]);
@@ -399,27 +401,27 @@ class TaskController extends Controller
         $this->gate($workspace, ['owner', 'admin', 'member']);
         abort_if($task->project_id !== $project->id, 404);
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         DB::table('activity_logs')->insert([
-            'id'           => (string) Str::uuid(),
+            'id' => (string) Str::uuid(),
             'workspace_id' => $project->workspace_id,
-            'user_id'      => $user->id,
+            'user_id' => $user->id,
             'subject_type' => 'task',
-            'subject_id'   => $task->id,
-            'action'       => 'task_deleted',
-            'payload'      => json_encode(['title' => $task->title]),
-            'created_at'   => now(),
+            'subject_id' => $task->id,
+            'action' => 'task_deleted',
+            'payload' => json_encode(['title' => $task->title]),
+            'created_at' => now(),
         ]);
 
         WebhookDispatchJob::dispatch($project->workspace_id, 'task.deleted', [
-            'task_id'    => $task->id,
-            'title'      => $task->title,
+            'task_id' => $task->id,
+            'title' => $task->title,
             'project_id' => $project->id,
             'deleted_by' => $user->id,
         ]);
-        $taskId     = $task->id;
+        $taskId = $task->id;
         $taskStatus = $task->status;
         $task->delete();
         broadcast(new TaskDeletedEvent($taskId, $project->id, $taskStatus))->toOthers();
@@ -429,7 +431,7 @@ class TaskController extends Controller
 
     public function watch(Request $request, Task $task): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
         $workspace = $task->project->workspace;
         $this->gate($workspace, ['owner', 'admin', 'member']);
@@ -441,7 +443,7 @@ class TaskController extends Controller
 
     public function unwatch(Request $request, Task $task): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
         $workspace = $task->project->workspace;
         $this->gate($workspace, ['owner', 'admin', 'member']);
@@ -466,26 +468,26 @@ class TaskController extends Controller
         $this->gate($workspace, ['owner', 'admin', 'member']);
 
         $request->validate([
-            'title'          => 'required|string|max:255',
-            'description'    => 'nullable|string',
-            'priority'       => 'in:low,medium,high',
-            'due_date'       => 'nullable|date',
-            'assignee_ids'   => 'nullable|array',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'priority' => 'in:low,medium,high',
+            'due_date' => 'nullable|date',
+            'assignee_ids' => 'nullable|array',
             'assignee_ids.*' => 'string|exists:users,id',
         ]);
 
         $position = $parent->children()->max('position') + 1;
 
         $subtask = Task::create([
-            'project_id'  => $project->id,
-            'parent_id'   => $parent->id,
-            'created_by'  => $request->user()->id,
-            'title'       => $request->title,
+            'project_id' => $project->id,
+            'parent_id' => $parent->id,
+            'created_by' => $request->user()->id,
+            'title' => $request->title,
             'description' => $request->description,
-            'priority'    => $request->priority ?? 'medium',
-            'due_date'    => $request->due_date,
-            'position'    => $position,
-            'status'      => 'todo',
+            'priority' => $request->priority ?? 'medium',
+            'due_date' => $request->due_date,
+            'position' => $position,
+            'status' => 'todo',
         ]);
 
         if ($request->filled('assignee_ids')) {
@@ -506,11 +508,11 @@ class TaskController extends Controller
         $this->gate($workspace, ['owner', 'admin', 'member']);
 
         $request->validate([
-            'tasks'                        => 'required|array',
-            'tasks.*.id'                   => 'required|string',
-            'tasks.*.status'               => 'nullable|in:todo,in_progress,in_review,done',
-            'tasks.*.project_status_id'    => 'nullable|string|exists:project_statuses,id',
-            'tasks.*.position'             => 'required|integer',
+            'tasks' => 'required|array',
+            'tasks.*.id' => 'required|string',
+            'tasks.*.status' => 'nullable|in:todo,in_progress,in_review,done',
+            'tasks.*.project_status_id' => 'nullable|string|exists:project_statuses,id',
+            'tasks.*.position' => 'required|integer',
         ]);
 
         // Build a slug→status map for project statuses
@@ -520,13 +522,13 @@ class TaskController extends Controller
             foreach ($request->tasks as $item) {
                 $update = ['position' => $item['position']];
 
-                if (!empty($item['project_status_id'])) {
+                if (! empty($item['project_status_id'])) {
                     $update['project_status_id'] = $item['project_status_id'];
                     $slug = $psMap[$item['project_status_id']] ?? null;
                     $update['status'] = in_array($slug, ['todo', 'in_progress', 'in_review', 'done'])
                         ? $slug
                         : 'todo';
-                } elseif (!empty($item['status'])) {
+                } elseif (! empty($item['status'])) {
                     $update['status'] = $item['status'];
                 }
 

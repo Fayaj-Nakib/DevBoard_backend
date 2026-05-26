@@ -10,7 +10,7 @@ use Spatie\Sluggable\SlugOptions;
 
 class Workspace extends Model
 {
-    use HasFactory, HasUuid, HasSlug;
+    use HasFactory, HasSlug, HasUuid;
 
     protected $fillable = ['name', 'slug', 'owner_id', 'require_2fa'];
 

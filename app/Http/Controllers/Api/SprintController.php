@@ -18,10 +18,11 @@ class SprintController extends Controller
         $this->projectGate($workspace, $project);
 
         $sprints = $project->sprints()
-            ->withCount(['tasks', 'tasks as done_count' => fn($q) => $q->where('status', 'done')])
+            ->withCount(['tasks', 'tasks as done_count' => fn ($q) => $q->where('status', 'done')])
             ->get()
             ->map(function ($sprint) {
                 $sprint->append(['progress', 'velocity']);
+
                 return $sprint;
             });
 
@@ -33,16 +34,16 @@ class SprintController extends Controller
         $this->gate($workspace, ['owner', 'admin', 'member']);
 
         $data = $request->validate([
-            'name'       => 'required|string|max:255',
-            'goal'       => 'nullable|string',
+            'name' => 'required|string|max:255',
+            'goal' => 'nullable|string',
             'start_date' => 'nullable|date',
-            'end_date'   => 'nullable|date|after_or_equal:start_date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
         $sprint = $project->sprints()->create([
             ...$data,
             'created_by' => $request->user()->id,
-            'status'     => 'planning',
+            'status' => 'planning',
         ]);
 
         return response()->json($sprint, 201);
@@ -67,11 +68,11 @@ class SprintController extends Controller
         abort_if($sprint->project_id !== $project->id, 404);
 
         $data = $request->validate([
-            'name'       => 'sometimes|string|max:255',
-            'goal'       => 'nullable|string',
+            'name' => 'sometimes|string|max:255',
+            'goal' => 'nullable|string',
             'start_date' => 'nullable|date',
-            'end_date'   => 'nullable|date|after_or_equal:start_date',
-            'status'     => 'sometimes|in:planning,active,completed',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'status' => 'sometimes|in:planning,active,completed',
         ]);
 
         // Only one active sprint per project
@@ -135,6 +136,6 @@ class SprintController extends Controller
     private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
         $role = $workspace->userRole(request()->user());
-        abort_if(!in_array($role, $roles), 403, 'Forbidden.');
+        abort_if(! in_array($role, $roles), 403, 'Forbidden.');
     }
 }

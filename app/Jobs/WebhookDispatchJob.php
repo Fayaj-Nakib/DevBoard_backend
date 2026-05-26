@@ -16,13 +16,14 @@ class WebhookDispatchJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries  = 3;
+    public int $tries = 3;
+
     public array $backoff = [30, 120, 300];
 
     public function __construct(
         public string $workspaceId,
         public string $event,
-        public array  $payload,
+        public array $payload,
     ) {}
 
     public function handle(): void
@@ -31,7 +32,7 @@ class WebhookDispatchJob implements ShouldQueue
             ->where('workspace_id', $this->workspaceId)
             ->where('is_active', true)
             ->get()
-            ->filter(fn(Webhook $w) => in_array($this->event, $w->events, true));
+            ->filter(fn (Webhook $w) => in_array($this->event, $w->events, true));
 
         foreach ($webhooks as $webhook) {
             $this->deliver($webhook);
@@ -40,33 +41,33 @@ class WebhookDispatchJob implements ShouldQueue
 
     private function deliver(Webhook $webhook): void
     {
-        $body      = json_encode($this->payload);
+        $body = json_encode($this->payload);
         $signature = hash_hmac('sha256', $body, $webhook->secret);
 
         $delivery = WebhookDelivery::create([
             'webhook_id' => $webhook->id,
-            'event'      => $this->event,
-            'payload'    => $this->payload,
+            'event' => $this->event,
+            'payload' => $this->payload,
         ]);
 
         try {
             $response = Http::timeout(10)
                 ->withHeaders([
-                    'Content-Type'          => 'application/json',
-                    'X-DevBoard-Signature'  => "sha256={$signature}",
-                    'X-DevBoard-Event'      => $this->event,
+                    'Content-Type' => 'application/json',
+                    'X-DevBoard-Signature' => "sha256={$signature}",
+                    'X-DevBoard-Event' => $this->event,
                 ])
                 ->post($webhook->url, $this->payload);
 
             $delivery->update([
                 'response_status' => $response->status(),
-                'response_body'   => substr($response->body(), 0, 2000),
-                'delivered_at'    => now(),
+                'response_body' => substr($response->body(), 0, 2000),
+                'delivered_at' => now(),
             ]);
         } catch (Throwable $e) {
             $delivery->update([
                 'response_body' => $e->getMessage(),
-                'failed_at'     => now(),
+                'failed_at' => now(),
             ]);
 
             // Re-throw so the job retries

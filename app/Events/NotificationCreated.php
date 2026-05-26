@@ -31,10 +31,10 @@ class NotificationCreated implements ShouldBroadcast
     {
         return [
             'notification' => [
-                'id'         => $this->notification->id,
-                'type'       => $this->notification->type,
-                'data'       => $this->notification->data,
-                'read_at'    => $this->notification->read_at,
+                'id' => $this->notification->id,
+                'type' => $this->notification->type,
+                'data' => $this->notification->data,
+                'read_at' => $this->notification->read_at,
                 'created_at' => $this->notification->created_at,
             ],
         ];

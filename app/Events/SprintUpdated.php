@@ -31,12 +31,12 @@ class SprintUpdated implements ShouldBroadcast
     {
         return [
             'sprint' => [
-                'id'         => $this->sprint->id,
+                'id' => $this->sprint->id,
                 'project_id' => $this->sprint->project_id,
-                'name'       => $this->sprint->name,
-                'status'     => $this->sprint->status,
+                'name' => $this->sprint->name,
+                'status' => $this->sprint->status,
                 'start_date' => $this->sprint->start_date,
-                'end_date'   => $this->sprint->end_date,
+                'end_date' => $this->sprint->end_date,
             ],
         ];
     }

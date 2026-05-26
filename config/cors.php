@@ -17,7 +17,7 @@ return [
      */
     'allowed_origins' => array_filter(
         array_map(
-            fn(string $o) => rtrim(trim($o), '/'),
+            fn (string $o) => rtrim(trim($o), '/'),
             explode(',', env('FRONTEND_URL', 'http://localhost:3000'))
         )
     ),
