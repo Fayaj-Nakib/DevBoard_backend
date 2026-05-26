@@ -7,6 +7,7 @@ use App\Jobs\SendTaskAssignedNotification;
 use App\Jobs\SendTaskWatcherNotification;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskStatusHistory;
 use App\Models\TaskTemplate;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
@@ -234,6 +235,7 @@ class TaskController extends Controller
         ]);
 
         // Sync status from project_status slug when project_status_id changes
+        $oldProjectStatusId = $task->project_status_id;
         if ($request->filled('project_status_id')) {
             $ps = \App\Models\ProjectStatus::find($request->project_status_id);
             if ($ps) {
@@ -245,6 +247,19 @@ class TaskController extends Controller
         }
 
         $task->update($updateData);
+
+        // Log status history when project_status_id changes
+        if ($request->filled('project_status_id')
+            && $request->project_status_id !== $oldProjectStatusId
+        ) {
+            TaskStatusHistory::create([
+                'task_id'        => $task->id,
+                'from_status_id' => $oldProjectStatusId,
+                'to_status_id'   => $request->project_status_id,
+                'changed_by'     => $request->user()->id,
+                'changed_at'     => now(),
+            ]);
+        }
 
         // Notify watchers when status changes
         if ($request->filled('status') && $request->status !== $oldStatus) {

@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BacklogController;
 use App\Http\Controllers\Api\BulkTaskController;
+use App\Http\Controllers\Api\BurndownController;
+use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\LabelController;
 use App\Http\Controllers\Api\MilestoneController;
@@ -12,9 +14,12 @@ use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ProjectStatusController;
 use App\Http\Controllers\Api\RecurringTaskController;
 use App\Http\Controllers\Api\SprintController;
+use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TaskDependencyController;
 use App\Http\Controllers\Api\TaskTemplateController;
+use App\Http\Controllers\Api\TimelineController;
+use App\Http\Controllers\Api\WorkloadController;
 use App\Http\Controllers\Api\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -64,6 +69,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('workspaces/{workspace}/projects/{project}/backlog/reorder',                [BacklogController::class, 'reorder']);
     Route::patch('workspaces/{workspace}/projects/{project}/tasks/{task}/backlog-toggle',    [BacklogController::class, 'toggle']);
 
+    // Timeline
+    Route::get('workspaces/{workspace}/projects/{project}/timeline',                         [TimelineController::class, 'index']);
+
+    // Calendar
+    Route::get('workspaces/{workspace}/projects/{project}/calendar',                         [CalendarController::class, 'index']);
+
+    // Workload
+    Route::get('workspaces/{workspace}/projects/{project}/workload',                         [WorkloadController::class, 'index']);
+
+    // Analytics / Stats
+    Route::get('workspaces/{workspace}/projects/{project}/stats',                            [StatsController::class, 'projectStats']);
+    Route::get('workspaces/{workspace}/stats',                                               [StatsController::class, 'workspaceStats']);
+    Route::get('workspaces/{workspace}/projects/{project}/velocity',                         [StatsController::class, 'velocity']);
+
     // Milestones
     Route::apiResource('workspaces/{workspace}/projects/{project}/milestones', MilestoneController::class);
 
@@ -75,6 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('workspaces/{workspace}/projects/{project}/sprints/{sprint}',                [SprintController::class, 'destroy']);
     Route::post('workspaces/{workspace}/projects/{project}/sprints/{sprint}/tasks',            [SprintController::class, 'addTask']);
     Route::delete('workspaces/{workspace}/projects/{project}/sprints/{sprint}/tasks/{task}',   [SprintController::class, 'removeTask']);
+    Route::get('workspaces/{workspace}/projects/{project}/sprints/{sprint}/burndown',          [BurndownController::class, 'show']);
 
     // Tasks (static segments must be registered before the resource to avoid {task} binding)
     Route::patch('workspaces/{workspace}/projects/{project}/tasks/reorder', [TaskController::class, 'reorder']);
