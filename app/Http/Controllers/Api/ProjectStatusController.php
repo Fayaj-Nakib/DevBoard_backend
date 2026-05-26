@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class ProjectStatusController extends Controller
 {
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
+    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -22,7 +22,7 @@ class ProjectStatusController extends Controller
 
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
         return response()->json($project->statuses()->get());
     }
 

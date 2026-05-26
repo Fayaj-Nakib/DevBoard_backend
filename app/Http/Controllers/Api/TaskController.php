@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
 
 class TaskController extends Controller
 {
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
+    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -32,7 +32,7 @@ class TaskController extends Controller
 
     public function index(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
 
         $query = $project->tasks()
             ->whereNull('parent_id')
@@ -105,7 +105,7 @@ class TaskController extends Controller
 
     public function store(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->gate($workspace, ['owner', 'admin', 'member']);
 
         $request->validate([
             'title'             => 'required_without:template_id|string|max:255',
@@ -224,7 +224,7 @@ class TaskController extends Controller
 
     public function show(Workspace $workspace, Project $project, Task $task): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
         abort_if($task->project_id !== $project->id, 404);
 
         return response()->json(
@@ -241,7 +241,7 @@ class TaskController extends Controller
 
     public function update(Request $request, Workspace $workspace, Project $project, Task $task): JsonResponse
     {
-        $this->gate($workspace);
+        $this->gate($workspace, ['owner', 'admin', 'member']);
         abort_if($task->project_id !== $project->id, 404);
 
         $request->validate([
@@ -396,7 +396,7 @@ class TaskController extends Controller
 
     public function destroy(Workspace $workspace, Project $project, Task $task): JsonResponse
     {
-        $this->gate($workspace);
+        $this->gate($workspace, ['owner', 'admin', 'member']);
         abort_if($task->project_id !== $project->id, 404);
 
         /** @var \App\Models\User $user */
@@ -432,7 +432,7 @@ class TaskController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
         $workspace = $task->project->workspace;
-        $this->gate($workspace);
+        $this->gate($workspace, ['owner', 'admin', 'member']);
 
         $task->watchers()->syncWithoutDetaching([$user->id]);
 
@@ -444,7 +444,7 @@ class TaskController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
         $workspace = $task->project->workspace;
-        $this->gate($workspace);
+        $this->gate($workspace, ['owner', 'admin', 'member']);
 
         $task->watchers()->detach($user->id);
 
@@ -453,7 +453,7 @@ class TaskController extends Controller
 
     public function indexSubtasks(Workspace $workspace, Project $project, Task $task): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
         abort_if($task->project_id !== $project->id, 404);
 
         return response()->json(
@@ -463,7 +463,7 @@ class TaskController extends Controller
 
     public function storeSubtask(Request $request, Workspace $workspace, Project $project, Task $parent): JsonResponse
     {
-        $this->gate($workspace);
+        $this->gate($workspace, ['owner', 'admin', 'member']);
 
         $request->validate([
             'title'          => 'required|string|max:255',
@@ -503,7 +503,7 @@ class TaskController extends Controller
 
     public function reorder(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->gate($workspace, ['owner', 'admin', 'member']);
 
         $request->validate([
             'tasks'                        => 'required|array',

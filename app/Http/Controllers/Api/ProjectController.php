@@ -17,12 +17,20 @@ class ProjectController extends Controller
     public function index(Workspace $workspace): JsonResponse
     {
         $this->gate($workspace);
-        return response()->json($workspace->projects()->withCount('tasks')->get());
+        $user  = Auth::user();
+        $query = $workspace->projects()->withCount('tasks');
+
+        if ($workspace->userRole($user) === 'guest') {
+            $memberProjectIds = ProjectMember::where('user_id', $user->id)->pluck('project_id');
+            $query->whereIn('id', $memberProjectIds);
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request, Workspace $workspace): JsonResponse
     {
-        $this->gate($workspace);
+        $this->gate($workspace, ['owner', 'admin', 'member']);
         $request->validate([
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -52,7 +60,7 @@ class ProjectController extends Controller
 
     public function show(Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
         return response()->json(
             $project->load(['tasks' => fn($q) => $q->orderBy('position')])
         );
@@ -73,7 +81,7 @@ class ProjectController extends Controller
         return response()->json(null, 204);
     }
 
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
+    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();

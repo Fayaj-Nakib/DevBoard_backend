@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 
 class MilestoneController extends Controller
 {
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
+    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -21,7 +21,7 @@ class MilestoneController extends Controller
 
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
 
         $milestones = $project->milestones()
             ->withCount(['tasks', 'tasks as done_tasks_count' => fn ($q) => $q->where('status', 'done')])
@@ -54,7 +54,7 @@ class MilestoneController extends Controller
 
     public function show(Workspace $workspace, Project $project, Milestone $milestone): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
         abort_if($milestone->project_id !== $project->id, 404);
 
         return response()->json(

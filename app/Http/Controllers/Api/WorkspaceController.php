@@ -74,7 +74,7 @@ class WorkspaceController extends Controller
         $this->gate($workspace, ['owner', 'admin']);
         $request->validate([
             'email' => 'required|email|exists:users,email',
-            'role'  => 'required|in:admin,member',
+            'role'  => 'required|in:admin,member,guest',
         ]);
 
         $user = User::where('email', $request->email)->firstOrFail();
@@ -111,7 +111,7 @@ class WorkspaceController extends Controller
         return response()->json(null, 204);
     }
 
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
+    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
         /** @var \App\Models\User $user */
         $user = auth()->user();

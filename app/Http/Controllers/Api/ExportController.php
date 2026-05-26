@@ -16,12 +16,12 @@ class ExportController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
+        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
     }
 
     public function export(Request $request, Workspace $workspace, Project $project): StreamedResponse|Response
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
         abort_if($project->workspace_id !== $workspace->id, 404);
 
         $format = $request->query('format', 'json');

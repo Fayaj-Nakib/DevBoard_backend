@@ -16,12 +16,12 @@ class CalendarController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
+        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
     }
 
     public function index(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
 
         $request->validate([
             'month'       => 'nullable|string|regex:/^\d{4}-\d{2}$/',

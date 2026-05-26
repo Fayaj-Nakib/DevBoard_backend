@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class BacklogController extends Controller
 {
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
+    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -22,7 +22,7 @@ class BacklogController extends Controller
 
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
 
         $tasks = $project->tasks()
             ->where('is_backlog', true)
@@ -37,7 +37,7 @@ class BacklogController extends Controller
 
     public function toggle(Request $request, Workspace $workspace, Project $project, Task $task): JsonResponse
     {
-        $this->gate($workspace);
+        $this->gate($workspace, ['owner', 'admin', 'member']);
         abort_if($task->project_id !== $project->id, 404);
 
         $task->update(['is_backlog' => !$task->is_backlog]);
@@ -52,7 +52,7 @@ class BacklogController extends Controller
 
     public function reorder(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->gate($workspace, ['owner', 'admin', 'member']);
 
         $request->validate([
             'tasks'            => 'required|array',

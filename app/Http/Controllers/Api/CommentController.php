@@ -18,6 +18,7 @@ class CommentController extends Controller
 {
     public function index(Task $task): JsonResponse
     {
+        $this->taskGuestCheck($task);
         return response()->json(
             $task->comments()->with('user:id,name,email')->get()
         );
@@ -25,6 +26,8 @@ class CommentController extends Controller
 
     public function store(Request $request, Task $task): JsonResponse
     {
+        $workspace = $task->project->workspace;
+        abort_if(!in_array($workspace->userRole($request->user()), ['owner', 'admin', 'member']), 403);
         $request->validate(['body' => 'required|string']);
 
         /** @var User $author */

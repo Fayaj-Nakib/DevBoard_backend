@@ -13,16 +13,16 @@ use Illuminate\Support\Facades\Auth;
 
 class AutomationRuleController extends Controller
 {
-    private function gate(Workspace $workspace): void
+    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
+        abort_if(!in_array($workspace->userRole($user), $roles), 403);
     }
 
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
 
         $rules = $project->automationRules()
             ->with(['logs' => fn($q) => $q->latest('triggered_at')->limit(1)])
@@ -53,7 +53,7 @@ class AutomationRuleController extends Controller
 
     public function show(Workspace $workspace, Project $project, AutomationRule $automationRule): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
         abort_if($automationRule->project_id !== $project->id, 404);
 
         $logs = $automationRule->logs()->limit(20)->get()->map(fn($log) => [

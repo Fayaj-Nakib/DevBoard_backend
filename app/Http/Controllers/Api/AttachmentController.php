@@ -13,6 +13,7 @@ class AttachmentController extends Controller
 {
     public function index(Task $task): JsonResponse
     {
+        $this->taskGuestCheck($task);
         return response()->json(
             $task->attachments()->with('uploader:id,name')->get()
         );

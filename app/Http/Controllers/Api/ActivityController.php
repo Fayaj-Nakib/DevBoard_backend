@@ -17,13 +17,12 @@ class ActivityController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
+        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
     }
 
     public function forTask(Request $request, Task $task): JsonResponse
     {
-        $workspace = $task->project->workspace;
-        $this->gate($workspace);
+        $this->taskGuestCheck($task);
 
         $logs = DB::table('activity_logs')
             ->leftJoin('users', 'activity_logs.user_id', '=', 'users.id')
@@ -44,7 +43,7 @@ class ActivityController extends Controller
 
     public function forProject(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
 
         $request->validate([
             'actor_id'    => 'nullable|string|exists:users,id',

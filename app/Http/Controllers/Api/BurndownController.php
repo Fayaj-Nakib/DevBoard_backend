@@ -18,12 +18,12 @@ class BurndownController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
+        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
     }
 
     public function show(Workspace $workspace, Project $project, Sprint $sprint): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
         abort_if($sprint->project_id !== $project->id, 404);
 
         // All tasks in this sprint with estimates

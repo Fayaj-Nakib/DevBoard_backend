@@ -17,12 +17,12 @@ class StatsController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
+        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
     }
 
     public function projectStats(Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
 
         $today = now()->toDateString();
         $base  = $project->tasks()->whereNull('parent_id');
@@ -154,7 +154,7 @@ class StatsController extends Controller
 
     public function velocity(Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
 
         $sprints = $project->sprints()
             ->where('status', 'completed')

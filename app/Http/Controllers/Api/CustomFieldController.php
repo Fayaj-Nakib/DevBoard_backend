@@ -14,18 +14,18 @@ use Illuminate\Support\Facades\Auth;
 
 class CustomFieldController extends Controller
 {
-    private function gate(Workspace $workspace): void
+    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
+        abort_if(!in_array($workspace->userRole($user), $roles), 403);
     }
 
     // ── Definitions ───────────────────────────────────────────────────────────
 
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
         abort_if($project->workspace_id !== $workspace->id, 404);
 
         return response()->json($project->customFieldDefinitions()->get());
@@ -108,7 +108,7 @@ class CustomFieldController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $workspace = $task->project->workspace;
-        abort_if($workspace->userRole($user) === null, 403);
+        abort_if(!in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
 
         // body: { field_definition_id => value, ... }
         $payload = $request->validate(['values' => 'required|array']);

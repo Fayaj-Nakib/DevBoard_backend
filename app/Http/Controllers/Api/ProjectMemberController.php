@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ProjectMemberController extends Controller
 {
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
+    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -35,7 +35,7 @@ class ProjectMemberController extends Controller
 
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectGate($workspace, $project);
         abort_if($project->workspace_id !== $workspace->id, 404);
 
         $members = $project->projectMembers()
