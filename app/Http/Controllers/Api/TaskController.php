@@ -538,4 +538,46 @@ class TaskController extends Controller
 
         return response()->json(['message' => 'Reordered.']);
     }
+
+    /**
+     * Cross-project task list scoped to a workspace.
+     * Supports filtering by assignee_id, status, and pagination via per_page.
+     */
+    public function workspaceIndex(Request $request, Workspace $workspace): JsonResponse
+    {
+        $this->gate($workspace);
+
+        $query = Task::whereHas('project', fn ($q) => $q->where('workspace_id', $workspace->id))
+            ->whereNull('parent_id')
+            ->with(['project:id,name', 'assignees:id,name']);
+
+        if ($request->filled('assignee_id')) {
+            $query->whereHas('assignees', fn ($q) => $q->where('users.id', $request->assignee_id));
+        }
+
+        if ($request->filled('status')) {
+            $status = $request->status;
+            if ($status === 'open') {
+                $query->where('status', '!=', 'done');
+            } else {
+                $query->where('status', $status);
+            }
+        }
+
+        $perPage = min((int) ($request->per_page ?? 20), 100);
+
+        $tasks = $query->orderBy('due_date')->orderBy('created_at', 'desc')->paginate($perPage);
+
+        $data = $tasks->getCollection()->map(fn (Task $t) => [
+            'id' => $t->id,
+            'title' => $t->title,
+            'status' => $t->status,
+            'priority' => $t->priority,
+            'due_date' => $t->due_date?->toDateString(),
+            'project_id' => $t->project_id,
+            'project_name' => $t->project?->name,
+        ]);
+
+        return response()->json($data);
+    }
 }

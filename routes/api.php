@@ -113,6 +113,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('workspaces/{workspace}/projects/{project}/sprints/{sprint}/tasks/{task}', [SprintController::class, 'removeTask']);
     Route::get('workspaces/{workspace}/projects/{project}/sprints/{sprint}/burndown', [BurndownController::class, 'show']);
 
+    // Workspace-level cross-project task list (used by dashboard)
+    Route::get('workspaces/{workspace}/tasks', [TaskController::class, 'workspaceIndex']);
+
     // Tasks (static segments must be registered before the resource to avoid {task} binding)
     Route::patch('workspaces/{workspace}/projects/{project}/tasks/reorder', [TaskController::class, 'reorder']);
     Route::post('workspaces/{workspace}/projects/{project}/tasks/bulk', [BulkTaskController::class, '__invoke']);
