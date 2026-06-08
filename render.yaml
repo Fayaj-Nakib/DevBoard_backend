@@ -4,6 +4,8 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
+    branch: main
+    autoDeploy: true
     healthCheckPath: /up
     envVars:
       # ── App ────────────────────────────────────────────────────
