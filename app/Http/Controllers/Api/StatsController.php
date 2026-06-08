@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -20,10 +21,11 @@ class StatsController extends Controller
         abort_if(! in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
     }
 
-    public function projectStats(Workspace $workspace, Project $project): JsonResponse
+    public function projectStats(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
         $this->projectGate($workspace, $project);
 
+        $days = max(1, (int) ($request->query('days', 30)));
         $today = now()->toDateString();
         $base = $project->tasks()->whereNull('parent_id');
 
@@ -63,11 +65,11 @@ class StatsController extends Controller
             ->limit(10)
             ->get();
 
-        $last30 = Carbon::now()->subDays(30);
-        $createdLast30 = (int) $base->clone()->where('created_at', '>=', $last30)->count();
+        $since = Carbon::now()->subDays($days);
+        $createdLast30 = (int) $base->clone()->where('created_at', '>=', $since)->count();
         $completedLast30 = (int) $base->clone()
             ->where('status', 'done')
-            ->where('updated_at', '>=', $last30)
+            ->where('updated_at', '>=', $since)
             ->count();
 
         return response()->json([
@@ -80,13 +82,15 @@ class StatsController extends Controller
             'tasks_by_assignee' => $tasksByAssignee,
             'tasks_created_last_30_days' => $createdLast30,
             'tasks_completed_last_30_days' => $completedLast30,
+            'days' => $days,
         ]);
     }
 
-    public function workspaceStats(Workspace $workspace): JsonResponse
+    public function workspaceStats(Request $request, Workspace $workspace): JsonResponse
     {
         $this->gate($workspace);
 
+        $days = max(1, (int) ($request->query('days', 30)));
         $today = now()->toDateString();
         $projectIds = $workspace->projects()->pluck('id');
         $base = DB::table('tasks')->whereIn('project_id', $projectIds)->whereNull('parent_id');
@@ -130,11 +134,11 @@ class StatsController extends Controller
             ->limit(10)
             ->get();
 
-        $last30 = Carbon::now()->subDays(30);
-        $createdLast30 = (int) $base->clone()->where('created_at', '>=', $last30)->count();
+        $since = Carbon::now()->subDays($days);
+        $createdLast30 = (int) $base->clone()->where('created_at', '>=', $since)->count();
         $completedLast30 = (int) $base->clone()
             ->where('status', 'done')
-            ->where('updated_at', '>=', $last30)
+            ->where('updated_at', '>=', $since)
             ->count();
 
         return response()->json([
@@ -149,6 +153,7 @@ class StatsController extends Controller
             'tasks_by_assignee' => $tasksByAssignee,
             'tasks_created_last_30_days' => $createdLast30,
             'tasks_completed_last_30_days' => $completedLast30,
+            'days' => $days,
         ]);
     }
 

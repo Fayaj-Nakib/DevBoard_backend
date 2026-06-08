@@ -189,6 +189,9 @@ class TaskController extends Controller
                     SendTaskAssignedNotification::dispatch($task, $assignee);
                 }
             }
+        } else {
+            // Auto-assign creator so the task surfaces in their "My Tasks" dashboard
+            $task->assignees()->sync([$user->id]);
         }
 
         // Apply label_ids from request or template
