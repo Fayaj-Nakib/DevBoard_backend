@@ -17,7 +17,7 @@ DevBoard is a full-stack project management tool inspired by tools like Linear a
 This repository is the **Laravel 13 REST API**. The Next.js frontend lives in a separate repo — see [devboard-web](https://github.com/Fayaj-Nakib/devboard-web).
 
 **Frontend:** https://devboard-frontend.vercel.app  
-**API base URL:** Check your Render dashboard → Services → `devboard-api` for the `.onrender.com` URL
+**API base URL:** https://devboard-backend-50cx.onrender.com/api
 
 ---
 
