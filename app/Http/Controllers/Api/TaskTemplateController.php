@@ -5,21 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\TaskTemplate;
-use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class TaskTemplateController extends Controller
 {
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
-    {
-        /** @var User $user */
-        $user = Auth::user();
-        abort_if(! in_array($workspace->userRole($user), $roles), 403);
-    }
-
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
         $this->projectGate($workspace, $project);
@@ -29,7 +20,7 @@ class TaskTemplateController extends Controller
 
     public function store(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin', 'member']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -60,7 +51,7 @@ class TaskTemplateController extends Controller
 
     public function update(Request $request, Workspace $workspace, Project $project, TaskTemplate $template): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin', 'member']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
         abort_if($template->project_id !== $project->id, 404);
 
         $request->validate([
@@ -84,7 +75,7 @@ class TaskTemplateController extends Controller
 
     public function destroy(Workspace $workspace, Project $project, TaskTemplate $template): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin']);
         abort_if($template->project_id !== $project->id, 404);
 
         $template->delete();

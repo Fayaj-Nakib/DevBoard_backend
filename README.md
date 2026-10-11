@@ -10,29 +10,13 @@
 
 ---
 
-## What is DevBoard?
+## Overview
 
-DevBoard is a full-stack project management tool inspired by tools like Linear and Trello. Teams can create **workspaces**, organise work into **projects**, and manage **tasks** on a drag-and-drop Kanban board.
+DevBoard is a multi-tenant project management API in the vein of Linear or Jira: users create **workspaces**, organize work into **projects**, and manage **tasks** on a Kanban board with sprints, milestones, and a backlog. Every workspace is isolated from every other — access is gated by a shared role check on every project-scoped controller, verifying both the caller's role *and* that the project being accessed actually belongs to the workspace in the URL. On top of that sits an event-driven automation engine (trigger → queued action → logged result), HMAC-signed outbound webhooks with retries, a GitHub integration that syncs PR/issue state onto tasks, and TOTP-based two-factor auth. This repository is the Laravel 13 REST API; the Next.js frontend lives in a separate repo — see [devboard-web](https://github.com/Fayaj-Nakib/devboard-web).
 
-This repository is the **Laravel 13 REST API**. The Next.js frontend lives in a separate repo — see [devboard-web](https://github.com/Fayaj-Nakib/devboard-web).
-
-**Frontend:** https://devboard-frontend.vercel.app  
+**Live demo:** https://devboard-frontend.vercel.app
 **API base URL:** https://devboard-backend-50cx.onrender.com/api
-
----
-
-## Tech Stack
-
-| Layer | Choice |
-|---|---|
-| Framework | Laravel 13 |
-| Language | PHP 8.3 |
-| Auth | Laravel Sanctum (token-based) |
-| Database | PostgreSQL 16 (Neon on prod) |
-| Queue | Database driver (sync on free tier) |
-| Mail | Gmail SMTP / log driver (dev) |
-| Containerisation | Docker (Render deployment) |
-| CI/CD | GitHub Actions — PHPUnit + Pint |
+**Demo login:** _add a seeded demo account here (email / password) before sharing this README — none is documented yet._
 
 ---
 
@@ -61,32 +45,35 @@ This repository is the **Laravel 13 REST API**. The Next.js frontend lives in a 
 └─────────────────────┘   └────────────────────────┘
 ```
 
+Every API controller that takes `{workspace}` and `{project}` route parameters runs through `Controller::projectGate()` / `projectRoleGate()`, which checks the caller's role in the workspace **and** that the project actually belongs to it, before any query touches the database. See `app/Http/Controllers/Controller.php`.
+
 ---
 
-## API Endpoints
+## Features
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/api/auth/register` | — | Register a new user |
-| POST | `/api/auth/login` | — | Log in, receive token |
-| POST | `/api/auth/logout` | ✓ | Revoke current token |
-| GET | `/api/auth/me` | ✓ | Authenticated user profile |
-| GET/POST | `/api/workspaces` | ✓ | List / create workspaces |
-| GET/PATCH/DELETE | `/api/workspaces/{id}` | ✓ | Show / update / delete workspace |
-| POST | `/api/workspaces/{id}/members` | ✓ | Add member to workspace |
-| DELETE | `/api/workspaces/{id}/members/{user}` | ✓ | Remove member |
-| GET/POST | `/api/workspaces/{ws}/projects` | ✓ | List / create projects |
-| GET/PATCH/DELETE | `/api/workspaces/{ws}/projects/{id}` | ✓ | Show / update / delete project |
-| GET/POST | `/api/workspaces/{ws}/projects/{p}/tasks` | ✓ | List / create tasks |
-| GET/PATCH/DELETE | `/api/workspaces/{ws}/projects/{p}/tasks/{id}` | ✓ | Show / update / delete task |
-| PATCH | `/api/workspaces/{ws}/projects/{p}/tasks/reorder` | ✓ | Reorder all tasks in a project |
-| GET/POST | `/api/tasks/{task}/comments` | ✓ | List / add comments |
-| DELETE | `/api/tasks/{task}/comments/{id}` | ✓ | Delete comment |
-| GET | `/api/notifications` | ✓ | Unread notifications |
-| PATCH | `/api/notifications/read-all` | ✓ | Mark all read |
-| PATCH | `/api/notifications/{id}/read` | ✓ | Mark one read |
+- **Two-tier RBAC** — workspace-level roles (owner/admin/member/guest) plus a second, per-project tier (viewer/editor/manager) for guests who need scoped access to a single project without full workspace membership.
+- **Event-driven automation engine** — per-project rules (5 trigger types: task created, status changed, due date reached, assignee added, comment added) fire queued actions (change status, assign user, add label, post comment, send notification), with a persisted success/failure log per execution.
+- **Real-time updates** — task, comment, sprint, and milestone changes broadcast over private Pusher channels (per workspace/project/user), so connected clients update without polling.
+- **Signed outbound webhooks** — HMAC-SHA256 signed payloads (`X-DevBoard-Signature`), a per-delivery audit trail, and a 3-attempt backoff schedule (30s/120s/300s) on failed deliveries.
+- **GitHub integration** — connect a repo per project; inbound webhooks (verified via `X-Hub-Signature-256`) sync PR merge/close and issue-closed state back onto linked tasks.
+- **TOTP two-factor authentication** — encrypted secrets and recovery codes (`pragmarx/google2fa-laravel`), with a login-challenge flow for 2FA-enabled accounts.
+- Sprints, milestones, backlog, calendar/timeline/workload views, custom fields, time tracking, and CSV/JSON import-export round out the project-management surface.
 
-All protected routes require `Authorization: Bearer {token}` header.
+---
+
+## Tech Stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Laravel 13 |
+| Language | PHP 8.3 |
+| Auth | Laravel Sanctum (token-based) + TOTP 2FA |
+| Database | PostgreSQL 16 (Neon on prod) |
+| Real-time | Pusher (private channels) |
+| Queue | Database driver locally; **sync on Render's free tier** — queued jobs run inline in production, not on a background worker |
+| Mail | Gmail SMTP / log driver (dev) |
+| Containerization | Docker (Render deployment) |
+| CI/CD | GitHub Actions — PHPUnit against a real Postgres service + Pint lint |
 
 ---
 
@@ -128,7 +115,7 @@ The API will be available at `http://localhost:8000`.
 
 ### Running Tests
 
-Tests require a separate PostgreSQL database (`devboard_test` by default — see `phpunit.xml`).
+Tests run against an isolated database (`devboard_test` by default — see `phpunit.xml`), never the dev database. **Make sure `phpunit.xml`'s `DB_PASSWORD` matches your local Postgres password** — it ships with a placeholder that won't match a freshly-created `.env`.
 
 ```bash
 # Create the test database first
@@ -140,9 +127,10 @@ php artisan test
 # Run a specific suite
 php artisan test tests/Feature/AuthTest.php
 php artisan test tests/Feature/TaskTest.php
+php artisan test tests/Feature/TenantIsolationTest.php
 ```
 
-There are 25 feature tests covering auth (10) and task management (15). All pass against a live PostgreSQL instance.
+There are 76 feature tests: 10 covering auth, 15 covering task management, and 51 regression tests (`TenantIsolationTest`) asserting that no workspace can reach another workspace's projects, tasks, milestones, sprints, statuses, templates, automation rules, or stats. All pass against a live PostgreSQL instance.
 
 ### Code Style
 
@@ -168,7 +156,7 @@ The API is deployed as a Docker container on **Render** connected to a **Neon** 
 ```
 
 Key production settings (already in `render.yaml`):
-- `QUEUE_CONNECTION=sync` — no background worker needed on the free tier
+- `QUEUE_CONNECTION=sync` — no background worker needed on the free tier, but it also means automation/webhook/notification jobs run synchronously on the request thread rather than asynchronously. Move to a paid plan with a worker process (and switch to `database` or `redis`) before relying on this for anything latency-sensitive.
 - `DB_SSLMODE=require` — Neon enforces SSL
 - `MAIL_MAILER=smtp` — Gmail App Password for transactional email
 

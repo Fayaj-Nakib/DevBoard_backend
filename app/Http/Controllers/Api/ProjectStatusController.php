@@ -5,22 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectStatus;
-use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ProjectStatusController extends Controller
 {
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
-    {
-        /** @var User $user */
-        $user = Auth::user();
-        abort_if(! in_array($workspace->userRole($user), $roles), 403);
-    }
-
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
         $this->projectGate($workspace, $project);
@@ -30,7 +21,7 @@ class ProjectStatusController extends Controller
 
     public function store(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin']);
 
         $request->validate([
             'name' => 'required|string|max:100',
@@ -57,7 +48,7 @@ class ProjectStatusController extends Controller
 
     public function update(Request $request, Workspace $workspace, Project $project, ProjectStatus $status): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin']);
         abort_if($status->project_id !== $project->id, 404);
 
         $request->validate([
@@ -73,7 +64,7 @@ class ProjectStatusController extends Controller
 
     public function destroy(Workspace $workspace, Project $project, ProjectStatus $status): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin']);
         abort_if($status->project_id !== $project->id, 404);
         abort_if($status->is_default, 422, 'Cannot delete a default status.');
 
@@ -94,7 +85,7 @@ class ProjectStatusController extends Controller
 
     public function reorder(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin']);
 
         $request->validate([
             'statuses' => 'required|array',

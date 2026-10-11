@@ -5,22 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
-use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class BacklogController extends Controller
 {
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
-    {
-        /** @var User $user */
-        $user = Auth::user();
-        abort_if(! in_array($workspace->userRole($user), $roles), 403);
-    }
-
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
         $this->projectGate($workspace, $project);
@@ -38,7 +29,7 @@ class BacklogController extends Controller
 
     public function toggle(Request $request, Workspace $workspace, Project $project, Task $task): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin', 'member']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
         abort_if($task->project_id !== $project->id, 404);
 
         $task->update(['is_backlog' => ! $task->is_backlog]);
@@ -53,7 +44,7 @@ class BacklogController extends Controller
 
     public function reorder(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin', 'member']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
 
         $request->validate([
             'tasks' => 'required|array',

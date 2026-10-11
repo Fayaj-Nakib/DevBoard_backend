@@ -31,7 +31,7 @@ class SprintController extends Controller
 
     public function store(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin', 'member']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
@@ -63,7 +63,7 @@ class SprintController extends Controller
 
     public function update(Request $request, Workspace $workspace, Project $project, Sprint $sprint): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin', 'member']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
 
         abort_if($sprint->project_id !== $project->id, 404);
 
@@ -92,7 +92,7 @@ class SprintController extends Controller
 
     public function destroy(Workspace $workspace, Project $project, Sprint $sprint): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin']);
 
         abort_if($sprint->project_id !== $project->id, 404);
 
@@ -105,7 +105,7 @@ class SprintController extends Controller
 
     public function addTask(Request $request, Workspace $workspace, Project $project, Sprint $sprint): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin', 'member']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
 
         abort_if($sprint->project_id !== $project->id, 404);
 
@@ -123,7 +123,7 @@ class SprintController extends Controller
 
     public function removeTask(Workspace $workspace, Project $project, Sprint $sprint, Task $task): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin', 'member']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
 
         abort_if($sprint->project_id !== $project->id, 404);
         abort_if($task->sprint_id !== $sprint->id, 422, 'Task not in this sprint.');
@@ -131,11 +131,5 @@ class SprintController extends Controller
         $task->update(['sprint_id' => null]);
 
         return response()->json(null, 204);
-    }
-
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
-    {
-        $role = $workspace->userRole(request()->user());
-        abort_if(! in_array($role, $roles), 403, 'Forbidden.');
     }
 }

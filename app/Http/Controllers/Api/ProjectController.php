@@ -69,7 +69,7 @@ class ProjectController extends Controller
 
     public function update(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin']);
         $request->validate(['name' => 'required|string|max:255']);
         $project->update($request->only('name', 'description', 'status'));
 
@@ -78,7 +78,7 @@ class ProjectController extends Controller
 
     public function destroy(Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin']);
         $project->delete();
 
         return response()->json(null, 204);

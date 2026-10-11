@@ -127,7 +127,7 @@ class TimeLogController extends Controller
 
     public function projectLogs(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
 
         $request->validate([
             'user_id' => 'nullable|string|exists:users,id',

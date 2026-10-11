@@ -3,11 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class SearchController extends Controller
@@ -19,13 +17,10 @@ class SearchController extends Controller
             'workspace_id' => 'required|string|exists:workspaces,id',
         ]);
 
-        /** @var User $user */
-        $user = Auth::user();
         $q = trim($request->q);
         $workspace = Workspace::findOrFail($request->workspace_id);
 
-        // Confirm user is a member of this workspace
-        abort_if(! in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
+        $this->wsGate($workspace, ['owner', 'admin', 'member']);
 
         $projectIds = $workspace->projects()->pluck('id');
         $like = '%'.$q.'%';
