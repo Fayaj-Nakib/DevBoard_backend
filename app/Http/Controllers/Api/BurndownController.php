@@ -5,23 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Sprint;
-use App\Models\User;
 use App\Models\Workspace;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class BurndownController extends Controller
 {
-    private function gate(Workspace $workspace): void
-    {
-        /** @var User $user */
-        $user = Auth::user();
-        abort_if(! in_array($workspace->userRole($user), ['owner', 'admin', 'member', 'guest']), 403);
-    }
-
     public function show(Workspace $workspace, Project $project, Sprint $sprint): JsonResponse
     {
         $this->projectGate($workspace, $project);

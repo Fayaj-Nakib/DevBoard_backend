@@ -4,12 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\WebhookDispatchJob;
-use App\Models\User;
 use App\Models\Webhook;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class WebhookController extends Controller
 {
@@ -19,16 +17,9 @@ class WebhookController extends Controller
         'project.created', 'project.updated',
     ];
 
-    private function gate(Workspace $workspace): void
-    {
-        /** @var User $user */
-        $user = Auth::user();
-        abort_if(! in_array($workspace->userRole($user), ['owner', 'admin']), 403);
-    }
-
     public function index(Workspace $workspace): JsonResponse
     {
-        $this->gate($workspace);
+        $this->wsGate($workspace, ['owner', 'admin']);
 
         $webhooks = $workspace->webhooks()
             ->orderBy('created_at')
@@ -40,7 +31,7 @@ class WebhookController extends Controller
 
     public function store(Request $request, Workspace $workspace): JsonResponse
     {
-        $this->gate($workspace);
+        $this->wsGate($workspace, ['owner', 'admin']);
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
@@ -58,7 +49,7 @@ class WebhookController extends Controller
 
     public function show(Workspace $workspace, Webhook $webhook): JsonResponse
     {
-        $this->gate($workspace);
+        $this->wsGate($workspace, ['owner', 'admin']);
         abort_if($webhook->workspace_id !== $workspace->id, 404);
 
         $deliveries = $webhook->deliveries()
@@ -81,7 +72,7 @@ class WebhookController extends Controller
 
     public function update(Request $request, Workspace $workspace, Webhook $webhook): JsonResponse
     {
-        $this->gate($workspace);
+        $this->wsGate($workspace, ['owner', 'admin']);
         abort_if($webhook->workspace_id !== $workspace->id, 404);
 
         $data = $request->validate([
@@ -100,7 +91,7 @@ class WebhookController extends Controller
 
     public function destroy(Workspace $workspace, Webhook $webhook): JsonResponse
     {
-        $this->gate($workspace);
+        $this->wsGate($workspace, ['owner', 'admin']);
         abort_if($webhook->workspace_id !== $workspace->id, 404);
 
         $webhook->delete();
@@ -110,7 +101,7 @@ class WebhookController extends Controller
 
     public function test(Workspace $workspace, Webhook $webhook): JsonResponse
     {
-        $this->gate($workspace);
+        $this->wsGate($workspace, ['owner', 'admin']);
         abort_if($webhook->workspace_id !== $workspace->id, 404);
 
         WebhookDispatchJob::dispatch($workspace->id, 'ping', [

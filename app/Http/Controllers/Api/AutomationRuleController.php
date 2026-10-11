@@ -5,21 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AutomationRule;
 use App\Models\Project;
-use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class AutomationRuleController extends Controller
 {
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member']): void
-    {
-        /** @var User $user */
-        $user = Auth::user();
-        abort_if(! in_array($workspace->userRole($user), $roles), 403);
-    }
-
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
         $this->projectGate($workspace, $project);
@@ -35,7 +26,7 @@ class AutomationRuleController extends Controller
 
     public function store(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
@@ -69,7 +60,7 @@ class AutomationRuleController extends Controller
 
     public function update(Request $request, Workspace $workspace, Project $project, AutomationRule $automationRule): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
         abort_if($automationRule->project_id !== $project->id, 404);
 
         $data = $request->validate([
@@ -88,7 +79,7 @@ class AutomationRuleController extends Controller
 
     public function destroy(Workspace $workspace, Project $project, AutomationRule $automationRule): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
         abort_if($automationRule->project_id !== $project->id, 404);
 
         $automationRule->delete();

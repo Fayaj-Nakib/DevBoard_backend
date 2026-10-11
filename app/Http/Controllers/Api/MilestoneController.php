@@ -5,21 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Milestone;
 use App\Models\Project;
-use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class MilestoneController extends Controller
 {
-    private function gate(Workspace $workspace, array $roles = ['owner', 'admin', 'member', 'guest']): void
-    {
-        /** @var User $user */
-        $user = Auth::user();
-        abort_if(! in_array($workspace->userRole($user), $roles), 403);
-    }
-
     public function index(Workspace $workspace, Project $project): JsonResponse
     {
         $this->projectGate($workspace, $project);
@@ -34,7 +25,7 @@ class MilestoneController extends Controller
 
     public function store(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin']);
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -66,7 +57,7 @@ class MilestoneController extends Controller
 
     public function update(Request $request, Workspace $workspace, Project $project, Milestone $milestone): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin']);
         abort_if($milestone->project_id !== $project->id, 404);
 
         $request->validate([
@@ -83,7 +74,7 @@ class MilestoneController extends Controller
 
     public function destroy(Workspace $workspace, Project $project, Milestone $milestone): JsonResponse
     {
-        $this->gate($workspace, ['owner', 'admin']);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin']);
         abort_if($milestone->project_id !== $project->id, 404);
 
         $milestone->delete();

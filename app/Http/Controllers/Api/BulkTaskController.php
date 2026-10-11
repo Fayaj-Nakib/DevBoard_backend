@@ -5,26 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
-use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class BulkTaskController extends Controller
 {
-    private function gate(Workspace $workspace): void
-    {
-        /** @var User $user */
-        $user = Auth::user();
-        abort_if(! in_array($workspace->userRole($user), ['owner', 'admin', 'member']), 403);
-    }
-
     public function __invoke(Request $request, Workspace $workspace, Project $project): JsonResponse
     {
-        $this->gate($workspace);
+        $this->projectRoleGate($workspace, $project, ['owner', 'admin', 'member']);
 
         $request->validate([
             'task_ids' => 'required|array|min:1',
