@@ -2,6 +2,10 @@
 
 > REST API backend for DevBoard — a SaaS-style Kanban project management tool.
 
+**Live demo:** https://dev-board-frontend.vercel.app
+**Demo login:** `demo@devboard.app` / `demo1234`
+**Frontend:** https://github.com/Fayaj-Nakib/DevBoard_Frontend
+
 [![API CI](https://github.com/Fayaj-Nakib/devboard-api/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Fayaj-Nakib/devboard-api/actions/workflows/ci-cd.yml)
 [![PHP 8.3](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white)](https://php.net)
 [![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)](https://laravel.com)
@@ -12,11 +16,9 @@
 
 ## Overview
 
-DevBoard is a multi-tenant project management API in the vein of Linear or Jira: users create **workspaces**, organize work into **projects**, and manage **tasks** on a Kanban board with sprints, milestones, and a backlog. Every workspace is isolated from every other — access is gated by a shared role check on every project-scoped controller, verifying both the caller's role *and* that the project being accessed actually belongs to the workspace in the URL. On top of that sits an event-driven automation engine (trigger → queued action → logged result), HMAC-signed outbound webhooks with retries, a GitHub integration that syncs PR/issue state onto tasks, and TOTP-based two-factor auth. This repository is the Laravel 13 REST API; the Next.js frontend lives in a separate repo — see [devboard-web](https://github.com/Fayaj-Nakib/devboard-web).
+DevBoard is a multi-tenant project management API in the vein of Linear or Jira: users create **workspaces**, organize work into **projects**, and manage **tasks** on a Kanban board with sprints, milestones, and a backlog. Every workspace is isolated from every other — access is gated by a shared role check on every project-scoped controller, verifying both the caller's role *and* that the project being accessed actually belongs to the workspace in the URL. On top of that sits an event-driven automation engine (trigger → queued action → logged result), HMAC-signed outbound webhooks with retries, a GitHub integration that syncs PR/issue state onto tasks, and TOTP-based two-factor auth. This repository is the Laravel 13 REST API; the Next.js frontend lives in a separate repo — see [DevBoard_Frontend](https://github.com/Fayaj-Nakib/DevBoard_Frontend).
 
-**Live demo:** https://devboard-frontend.vercel.app
 **API base URL:** https://devboard-backend-50cx.onrender.com/api
-**Demo login:** _add a seeded demo account here (email / password) before sharing this README — none is documented yet._
 
 ---
 
