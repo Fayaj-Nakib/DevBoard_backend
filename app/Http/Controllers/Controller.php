@@ -28,6 +28,8 @@ abstract class Controller
      */
     protected function projectGate(Workspace $workspace, Project $project): User
     {
+        abort_if($project->workspace_id !== $workspace->id, 404);
+
         $user = $this->wsGate($workspace);
         if ($workspace->userRole($user) === 'guest') {
             abort_unless(
@@ -39,6 +41,21 @@ abstract class Controller
         }
 
         return $user;
+    }
+
+    /**
+     * Role gate for project-scoped mutations (store/update/destroy) that don't
+     * need the guest project-membership check projectGate() adds — same
+     * project-belongs-to-workspace guard, plus an explicit role check.
+     */
+    protected function projectRoleGate(
+        Workspace $workspace,
+        Project $project,
+        array $roles = ['owner', 'admin', 'member', 'guest'],
+    ): User {
+        abort_if($project->workspace_id !== $workspace->id, 404);
+
+        return $this->wsGate($workspace, $roles);
     }
 
     /**
